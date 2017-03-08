@@ -1,5 +1,4 @@
 import processing.serial.*;
-
 Serial myPort;
 
 float sex_probability;
@@ -17,11 +16,11 @@ String message;
 boolean printed = false;
 JSONObject person = new JSONObject();
 
-
 void setup()
 {
 	size(1000,1414);
 	background(255);
+	frameRate(1);
 	myPort = new Serial(this, "COM7", 9600);
 	// Load name files here
 	// Probably should load picture files here
@@ -32,7 +31,7 @@ void setup()
 	race_probability = random(0,1);
 	class_probability = random(0,1);
 	int idNumber = int(random(100000, 999999));
-	id = "ID# " + idNumber;
+	id = "ID#: " + idNumber;
 	textSize(60);
 	fill(224,22,43);
 	textAlign(LEFT);
@@ -47,7 +46,8 @@ void setup()
 	social_class = class_determiner(class_probability);
 	birthday = birthday_generator();
 	// String district = district_determiner(district_probability); will add once printer works
-	message = "NAME: Generic Name" + '\n' + "BIRTHDAY: " + birthday + '\n' + "RACE: " + race + '\n' + "SEX: " + sex + '\n' + id + '\n' + "CLASS: " + social_class + '\n' + '$';
+	message = "NAME: Generic Name" + "\n" + "BIRTHDAY: " + birthday + "\n" + "RACE: " + race + "\n" + "SEX: " + sex + "\n" + id + "\n" + "CLASS: " + social_class + "\n" + "|";
+	println(message);
 	// This is the string to be sent to the Arduino printer
 	// myPort.write("NAME: Generic Name" + '\n' + "BIRTHDAY: " + birthday + '\n' + "RACE: " + race + '\n' + "SEX: " + sex + '\n' + id + '\n' + "CLASS: " + social_class + '$');
 	person.setInt("id",idNumber);
@@ -56,20 +56,34 @@ void setup()
 	person.setString("race", race);
 	person.setString("birthday", birthday);
 	saveJSONObject(person, "data/person.json");
+	noLoop();
 	// The JSON file will now be read by the voting terminal
 }
 
 void draw()
 {
-	myPort.write(message);
-	delay(10000);
-	if(printed == false)
-	{
-		myPort.write(message);
-		delay(2000);
-	}
 
+	myPort.write(message);
+	// if(keyPressed){
+	// 	if(key == 'p' ){
+	// 		myPort.write(message);
+	// 		printed = true;
+	// 	}
+	// }
+	println(myPort.read());
 }
+
+void keyPressed(){
+	if (key == 'p'){
+		redraw();
+		println("HIT");
+	}
+}
+
+// boolean printed (String message){
+// 	myPort.write(message);
+// 	return true;
+// }
 
 // message idea from Nick, "Help me I'm trapped in the machine"
 

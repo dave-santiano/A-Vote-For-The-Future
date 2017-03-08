@@ -10,8 +10,8 @@ Adafruit_Thermal printer(&mySerial);
 String inputString = "";
 boolean stringComplete = false;
 boolean lineComplete = false;
-boolean allComplete = false;
 char val;
+String inString = "";
 
 void setup() 
 {
@@ -19,9 +19,8 @@ void setup()
   mySerial.begin(9600);
   Serial.begin(9600);
 //reserve 200 bytes for the string
-  inputString.reserve(600);
+  inputString.reserve(200);
   printer.begin();
-  printer.justify('C');
 //  printer.println("\n\n\n\n\n WORK WORK WORK WORK WORK");
 //  printer.println("NAME: CHAD CHADDINGTON");
 //  printer.println("BIRTHDAY: 7/16/2176");
@@ -44,22 +43,24 @@ void loop() {
 //        printer.println("READ");
 //      }
 //this is for testing purposes, to see if the arduino even gets a message from proceessing
-      
+
+
   if(stringComplete){
-      printer.println(inputString);
-      inputString = "";
-      delay(2000L);         // Sleep for 2 seconds
+      printer.justify('C');
+      printer.println(inputString); //Print the whole entire string
+      inputString = "";     // Make sure to empty it or else it will start filling up the whole entire receipt thing.
+      delay(2000L);         // Sleep for 2 seconds.
       printer.sleep();      // Tell printer to sleep
       printer.wake();       // MUST wake() before printing again, even if reset
       printer.setDefault(); // Restore printer to defaults
       printer.println("\n\n\n\n\n");
       stringComplete = false;
       lineComplete = false;
-    }
-    
+  }
   if(lineComplete){
+      delay(200);
       printer.println(inputString);
-      inputString = "";
+      inputString = "";  
       lineComplete = false;
     }
 }
@@ -69,13 +70,16 @@ void serialEvent(){
     while(Serial.available()){
         char inChar = (char)Serial.read();
         inputString += inChar;
-        if (inChar == '\n'){
-            lineComplete = true;
-          
-          }
-        if (inChar == '$'){
+//        if (inChar == '\n'){
+//            lineComplete = true;
+//          }
+// The printer automatically reads '\n' characters, whowuddathunkit.
+//SOOOO, no need for detecting if there are '\n' characters or not, which is probably
+//what was fucking everything up.
+
+        if (inChar == '|'){
             stringComplete = true;
-          
         }
+
       }
   }

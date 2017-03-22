@@ -53,9 +53,15 @@ void loop() {
       printer.sleep();      // Tell printer to sleep
       printer.wake();       // MUST wake() before printing again, even if reset
       printer.setDefault(); // Restore printer to defaults
-      printer.println("\n\n\n\n\n");
+      printer.println("\n\n\n\n");//Looking back at it, I should have realized that the printer could have read
+                                    //Looking back at it, I should have realized that the printer could have read
+                                    //'\n' characters, since I was feeding it a string of '\n' characters this 
+                                    //whole time.
+                                    //...
+                                    //I hate myself.
       stringComplete = false;
       lineComplete = false;
+      //"This is the first line \n this is the second line
   }
   if(lineComplete){
       delay(200);

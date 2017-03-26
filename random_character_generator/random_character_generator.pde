@@ -1,32 +1,21 @@
 import processing.serial.*;
 Serial myPort;
+String sex, race, social_class, birthday, id, message, district;
+float sex_probability, race_probability, class_probability, district_probability;
 
-float sex_probability;
-float race_probability;
-float class_probability;
-float district_probability;
-
-String sex;
-String race;
-String social_class;
-String birthday;
-String id;
-String message;
-String district;
 
 boolean printed = false;
 JSONObject person = new JSONObject();
 
 void setup()
 {
-	size(1000,1414);
+	size(1280,720);
 	background(255);
 	frameRate(1);
 	myPort = new Serial(this, "COM7", 9600);
 	// Load name files here
 	// Probably should load picture files here
 	// as well
-
 	// Generate character data in JSON data format.
 	sex_probability = random(0,1);
 	race_probability = random(0,1);
@@ -35,15 +24,15 @@ void setup()
 
 	int idNumber = int(random(100000, 999999));
 	id = "ID#: " + idNumber;
-	textSize(60);
-	fill(224,22,43);
-	textAlign(LEFT);
-	text("Patriotopia ID",50,100);
-	textSize(60);
-	fill(224,22,43);
-	textAlign(RIGHT);
-	text(id, width - 50, 100);
-	textSize(60);
+	// textSize(60);
+	// fill(224,22,43);
+	// textAlign(LEFT);
+	// text("Patriotopia ID",50,100);
+	// textSize(60);
+	// fill(224,22,43);
+	// textAlign(RIGHT);
+	// text(id, width - 50, 100);
+	// textSize(60);
 	sex = sex_determiner(sex_probability);
 	race = race_determiner(race_probability);
 	social_class = class_determiner(class_probability);
@@ -62,6 +51,8 @@ void setup()
 	saveJSONObject(person, "data/person.json");
 	noLoop();
 	// The JSON file will now be read by the voting terminal
+	// JSON file may not be  needed, execute the random character generator in a thread
+	// and then have it read by the program and processed.
 }
 
 void draw()
@@ -77,14 +68,9 @@ void keyPressed(){
 	}
 }
 
-// boolean printed (String message){
-// 	myPort.write(message);
-// 	return true;
-// }
-
 // message idea from Nick, "Help me I'm trapped in the machine"
 
-//Changing demographics to Pew demographic projections in 2050
+//Changed demographics to Pew demographic projections in 2050
 String race_determiner(float race_probability)
 {
 	if (race_probability <= .47){

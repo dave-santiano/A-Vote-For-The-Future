@@ -1,78 +1,76 @@
 import processing.serial.*;
+import controlP5.*;
+import de.looksgood.ani.*;
+// GUI variables
+ControlP5 cp5;
+PImage error_msg;
+int page, idNumber;
+boolean loaded = false;
+Button[] main_menu_buttons = new Button[3];
+Button[] voting_buttons = new Button[2];
+Textlabel[] voting_prompts = new Textlabel[3];
+Button back_button;
+String name, clicked_button;
+String male_first_names[],female_first_names[];
+// Randomizer and Serial communication variables
 Serial myPort;
 String sex, race, social_class, birthday, id, message, district;
 float sex_probability, race_probability, class_probability, district_probability;
-
-
 boolean printed = false;
-JSONObject person = new JSONObject();
 
 void setup()
 {
+	// myPort = new Serial(this, "COM16", 9600);
+	// fullScreen();
 	size(1280,720);
+	error_msg = loadImage("error_msg.png");
+	noStroke();
+	cp5 = new ControlP5(this);
+	voting_interface();
+	// Load voting interface elements
 	background(255);
-	frameRate(1);
-	myPort = new Serial(this, "COM7", 9600);
-	// Load name files here
-	// Probably should load picture files here
-	// as well
-	// Generate character data in JSON data format.
-	sex_probability = random(0,1);
-	race_probability = random(0,1);
-	class_probability = random(0,1);
-	district_probability = random(0,.96);
-
-	int idNumber = int(random(100000, 999999));
-	id = "ID#: " + idNumber;
-	// textSize(60);
-	// fill(224,22,43);
-	// textAlign(LEFT);
-	// text("Patriotopia ID",50,100);
-	// textSize(60);
-	// fill(224,22,43);
-	// textAlign(RIGHT);
-	// text(id, width - 50, 100);
-	// textSize(60);
-	sex = sex_determiner(sex_probability);
-	race = race_determiner(race_probability);
-	social_class = class_determiner(class_probability);
-	birthday = birthday_generator();
-	district = district_determiner(district_probability);
-	// String district = district_determiner(district_probability); will add once printer works
-	message = "NAME: Generic Name" + "\n" + "BIRTHDAY: " + birthday + "\n" + "RACE: " + race + "\n" + "SEX: " + sex + "\n" + id + "\n" + "CLASS: " + social_class + "\n" + "|";
+	loaded = true;
+	Ani.init(this);
+	// Generate the character data
+	message = character_generator();
 	println(message);
-	// This is the string to be sent to the Arduino printer
-	person.setInt("id",idNumber);
-	person.setString("sex", sex);
-	person.setString("class", social_class);
-	person.setString("race", race);
-	person.setString("birthday", birthday);
-	person.setString("district", district);
-	saveJSONObject(person, "data/person.json");
-	noLoop();
-	// The JSON file will now be read by the voting terminal
-	// JSON file may not be  needed, execute the random character generator in a thread
-	// and then have it read by the program and processed.
+	// myPort.write(message);
 }
 
 void draw()
 {
-	myPort.write(message);
-	println(myPort.read());
+	  textSize(40);
+	  fill(224,22,43);
+	  textAlign(LEFT);
+	  text("Welcome, " + name,50,100);
+	  // textSize(25);
+	  // text(message,50,200);
+	  textSize(40);
+	  fill(224,22,43);
+	  textAlign(RIGHT);
+	  text(id, width - 50, 100);
+	  textSize(60);
 }
 
-void keyPressed(){
-	if (key == 'p'){
-		redraw();
-		println("HIT");
-	}
+String character_generator(){
+	sex_probability = random(0,1);
+	race_probability = random(0,1);
+	class_probability = random(0,1);
+	district_probability = random(0,.96);
+	idNumber = int(random(100000, 999999));
+	id = "ID#: " + idNumber;
+	sex = sex_determiner(sex_probability);
+	name = name_determiner(sex);
+	race = race_determiner(race_probability);
+	social_class = class_determiner(class_probability);
+	birthday = birthday_generator();
+	district = district_determiner(district_probability);
+	message = "NAME: "+ name + "\n" + "BIRTHDAY: " + birthday + "\n" + "RACE: " + race + "\n" + "SEX: " + sex + "\n" + id + "\n" + "CLASS: " + social_class + "\n" + "|";
+	return message;
 }
-
-// message idea from Nick, "Help me I'm trapped in the machine"
 
 //Changed demographics to Pew demographic projections in 2050
-String race_determiner(float race_probability)
-{
+String race_determiner(float race_probability){
 	if (race_probability <= .47){
 		String white = "White";
 		return white;
@@ -109,9 +107,7 @@ String race_determiner(float race_probability)
 	}
 }
 
-
-String sex_determiner(float sex_probability)
-{
+String sex_determiner(float sex_probability){
 	if (sex_probability<.50)
 	{
 		String male = "Male";
@@ -120,13 +116,29 @@ String sex_determiner(float sex_probability)
 	else
 	{
 		String female = "Female";
+
 		return female;
 	}
 }
 
+String name_determiner(String sex){
+	if(sex=="Male"){
+		String male_first_names[] = loadStrings("male.txt");
+		int ind = floor(random(male_first_names.length));
+		name = male_first_names[ind];
+		return name;
+	}
+	else if(sex=="Female"){
+		String female_first_names[] = loadStrings("female.txt");
+		int ind = floor(random(female_first_names.length));
+		name = female_first_names[ind];
+		return name;
+	}else{
+		return "";
+	}
+}
 
-String class_determiner(float class_probability)
-{
+String class_determiner(float class_probability){
 	if(class_probability<=.50)
 	{
 		String middle_class = "Middle";
@@ -194,3 +206,144 @@ String birthday_generator(){
 		return "";
 	}
 }
+
+void controlEvent(ControlEvent theEvent){
+	println(theEvent.getController().getName());
+	clicked_button = theEvent.getController().getName();
+}
+
+void voting_interface(){
+	main_menu_buttons[0] = cp5.addButton("choice1")
+	.setPosition(width/2-200, 200)
+	.setCaptionLabel("IMMIGRATION")
+	.setSize(400,60);
+	// .setImages(loadImage("test.png"),loadImage("test.png"),loadImage("test.png"))
+	//(defaultImage, rolloverImage, pressedImage)
+	// .updateSize()
+	//updateSize changes the button area to that of the image, this will be useful later when
+	//replacing the buttons with my own custom ones
+	main_menu_buttons[1] = cp5.addButton("choice2")
+	.setPosition(width/2-200,400)
+	.setCaptionLabel("ECONOMICS")
+	.setSize(400,60);
+
+	main_menu_buttons[2] = cp5.addButton("choice3")
+	.setPosition(width/2-200,600)
+	.setCaptionLabel("PATRIOTISM")
+	.setSize(400,60);
+
+	voting_prompts[0] = cp5.addTextlabel("voting_prompt1")
+	.setText("The recent ban on immigration into the city has been proven effective.\nThe Department of City Safety and Security advises to continue the ban.\nPlease vote.")
+	.setPosition(width/2-400, 300)
+	.setColorValue(0x00000000)
+	.setFont(createFont("Inconsolata", 26))
+	.hide();
+
+	voting_prompts[1] = cp5.addTextlabel("voting_prompt2")
+	.setText("Recent studies by government economists say that a new commercial zone\nin District 4 would lead to increased economic growth.\nPlease vote.")
+	.setPosition(width/2-400, 300)
+	.setColorValue(0x00000000)
+	.setFont(createFont("Inconsolata", 26))
+	.hide();
+
+	voting_prompts[2] = cp5.addTextlabel("voting_prompt3")
+	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have\never had the opportunity to live in?")
+	.setPosition(width/2-400, 300)
+	.setColorValue(0x00000000)
+	.setFont(createFont("Inconsolata", 26))
+	.hide();
+
+	voting_buttons[0] = cp5.addButton("voting_button_yes")
+	.setPosition(width/2 -400, 500)
+	.setSize(150,100)
+	.setCaptionLabel("YES")
+	.hide();
+
+	voting_buttons[1] = cp5.addButton("voting_button_no")
+	.setPosition(width/2 +250, 500)
+	.setSize(150,100)
+	.setCaptionLabel("NO")
+	.hide();
+
+	back_button = cp5.addButton("back")
+	.setPosition(width-150, height-50)
+	.setSize(100,25)
+	.hide();
+}
+
+// You can write functions that are named after the buttons, stating what to do after the button is pressed.
+void choice1(){
+	background(255);
+	if(loaded==true){
+		for (int i=0; i<3;i++){		main_menu_buttons[i].hide();}
+		for (int i=0; i<2;i++){		voting_buttons[i].show();}
+									voting_prompts[0].show();
+									back_button.show();
+		if(race == "Hispanic" || race == "American Indian or Alaska Native"){
+			imageMode(CENTER);
+			image(error_msg,width/2,height/2);
+			for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+			for (int i=0; i<3;i++){		voting_prompts[i].hide();}
+										back_button.show();
+		}
+	}
+}
+void choice2(){
+	background(255);
+	if(loaded==true){
+		for (int i=0; i<3;i++){		main_menu_buttons[i].hide();}
+		for (int i=0; i<2;i++){		voting_buttons[i].show();}
+									voting_prompts[1].show();
+									back_button.show();
+		if(social_class == "Lower"){
+			imageMode(CENTER);
+			image(error_msg,width/2,height/2);
+			for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+			for (int i=0; i<3;i++){		voting_prompts[i].hide();}
+										back_button.show();
+		}
+	}
+}
+void choice3(){
+	background(255);
+	if(loaded==true){
+		for (int i=0; i<3;i++){		main_menu_buttons[i].hide();}
+		for (int i=0; i<2;i++){		voting_buttons[i].show();}
+									voting_prompts[2].show();
+									back_button.show();
+	}
+}
+void voting_button_yes(){
+	background(255);
+	if(loaded==true){
+		for (int i=0; i<3;i++){		main_menu_buttons[i].show();}
+		for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+		for (int i=0; i<3;i++){		voting_prompts[i].hide();}
+									back_button.hide();
+	}
+}
+void voting_button_no(){
+	background(255);
+	if(loaded==true && clicked_button!="choice3"){
+		for (int i=0; i<3;i++){		main_menu_buttons[i].show();}
+		for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+		for (int i=0; i<3;i++){		voting_prompts[i].hide();}
+									back_button.hide();
+	}if(clicked_button=="choice3"){
+		imageMode(CENTER);
+		image(error_msg,width/2,height/2);
+		for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+		for (int i=0; i<3;i++){		voting_prompts[i].hide();}
+									back_button.show();
+	}
+}
+void back(){
+	background(255);
+	if(loaded==true){
+			for (int i=0; i<3;i++){		main_menu_buttons[i].show();}
+			for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+			for (int i=0; i<3;i++){		voting_prompts[i].hide();}
+										back_button.hide();
+		}
+}
+

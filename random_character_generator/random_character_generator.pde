@@ -4,22 +4,25 @@ import de.looksgood.ani.*;
 // GUI variables
 ControlP5 cp5;
 PImage error_msg;
-int page, idNumber;
+int page, idNumber, timer;
+int alphaValue = 0;
 boolean loaded = false;
+boolean name_displayed =false;
+boolean name_done = false;
+boolean race_sex_displayed = false;
+boolean race_sex_done = false;
 Button[] main_menu_buttons = new Button[3];
 Button[] voting_buttons = new Button[2];
 Textlabel[] voting_prompts = new Textlabel[3];
 Button back_button;
-String name, clicked_button;
-String male_first_names[],female_first_names[];
+String male_first_names[],female_first_names[],name, clicked_button;
 // Randomizer and Serial communication variables
 Serial myPort;
 String sex, race, social_class, birthday, id, message, district;
 float sex_probability, race_probability, class_probability, district_probability;
 boolean printed = false;
 
-void setup()
-{
+void setup(){
 	// myPort = new Serial(this, "COM16", 9600);
 	// fullScreen();
 	size(1280,720);
@@ -37,19 +40,21 @@ void setup()
 	// myPort.write(message);
 }
 
-void draw()
-{
-	  textSize(40);
-	  fill(224,22,43);
-	  textAlign(LEFT);
-	  text("Welcome, " + name,50,100);
-	  // textSize(25);
-	  // text(message,50,200);
-	  textSize(40);
-	  fill(224,22,43);
-	  textAlign(RIGHT);
-	  text(id, width - 50, 100);
-	  textSize(60);
+void draw(){
+	// The beginning of the draw loop should have the different introductory sentences, an if statement should cover whether they are drawn or not.
+	if(name_done == false){name_display(name);}
+	else if(race_sex_done == false){println(alphaValue);race_sex_display(race, sex);}
+	// textSize(40);
+	// fill(224,22,43);
+	// textAlign(LEFT);
+	// text("Welcome, " + name,50,100);
+	// textSize(25);
+	// text(message,50,200);
+	// textSize(40);
+	// fill(224,22,43);
+	// textAlign(RIGHT);
+	// text(id, width - 50, 100);
+	// textSize(60);
 }
 
 String character_generator(){
@@ -65,10 +70,88 @@ String character_generator(){
 	social_class = class_determiner(class_probability);
 	birthday = birthday_generator();
 	district = district_determiner(district_probability);
-	message = "NAME: "+ name + "\n" + "BIRTHDAY: " + birthday + "\n" + "RACE: " + race + "\n" + "SEX: " + sex + "\n" + id + "\n" + "CLASS: " + social_class + "\n" + "|";
+	message = "NAME: "+ name + "\n" + "BIRTHDAY: " + birthday + "\n" + "RACE: " + race + "\n" + "SEX: " + sex + "\n" + id + "\n" + "DISTRICT: " + district + "\n" + "CLASS: " + social_class + "\n" + "|";
 	return message;
 }
 
+void name_display(String name){
+	// fade-in
+	if(name_displayed == false && alphaValue<255){
+		alphaValue++;
+		clear_screen();
+		background(255);
+		textSize(40);
+		fill(0,alphaValue+50);
+		textAlign(CENTER);
+		text("You are ",width/2,height/2);
+		textSize(40);
+		fill(224,22,43, alphaValue);
+		textAlign(LEFT);
+		text(name, width/2+75, height/2);
+	}
+	// fade-out
+	else{
+		name_displayed = true;
+		alphaValue--;
+		clear_screen();
+		background(255);
+		textSize(40);
+		fill(0,alphaValue);
+		textAlign(CENTER);
+		text("You are ",width/2,height/2);
+		textSize(40);
+		fill(224,22,43, alphaValue);
+		textAlign(LEFT);
+		text(name, width/2+75, height/2);
+		// stop drawing the name here once opacity is at 0%
+		if(alphaValue ==0){
+			name_done = true;
+			clear_screen();
+		}
+	}
+}
+
+void race_sex_display(String race, String sex){
+	// fade-in
+	if(race_sex_displayed == false && alphaValue<255){
+		alphaValue++;
+		clear_screen();
+		background(255);
+		textSize(40);
+		fill(0,alphaValue);
+		textAlign(CENTER);
+		//gotta
+		if(race == "Asian" || race == "American Indian or Alaska Native"){
+			text("You are an ",width/2,height/2);
+		}else{
+			text("You are a ",width/2,height/2);
+		}
+		textSize(40);
+		fill(224,22,43, alphaValue);
+		textAlign(LEFT);
+		text(race, width/2+75, height/2);
+		text(sex, width/2+200,height/2);
+	}
+	// fade-out
+	else{
+		race_sex_displayed = true;
+		alphaValue--;
+		clear_screen();
+		background(255);
+		textSize(40);
+		fill(0,alphaValue);
+		textAlign(CENTER);
+		text("You are an ",width/2,height/2);
+		textSize(40);
+		fill(224,22,43, alphaValue);
+		textAlign(LEFT);
+		text(race, width/2+75, height/2);
+		// stop drawing the name here once opacity is at 0%
+		if(alphaValue ==0){
+			race_sex_done = true;
+		}
+	}
+}
 //Changed demographics to Pew demographic projections in 2050
 String race_determiner(float race_probability){
 	if (race_probability <= .47){
@@ -152,8 +235,7 @@ String class_determiner(float class_probability){
 		String upper_class = "Upper";
 		return upper_class;
 	}
-	else
-	{
+	else{
 		return "";
 	}
 }
@@ -343,6 +425,26 @@ void back(){
 			for (int i=0; i<3;i++){		main_menu_buttons[i].show();}
 			for (int i=0; i<2;i++){		voting_buttons[i].hide();}
 			for (int i=0; i<3;i++){		voting_prompts[i].hide();}
+										back_button.hide();
+		}
+}
+
+void clear_screen(){
+	background(255);
+		if(loaded==true){
+			for (int i=0;i<3;i++){ 		main_menu_buttons[i].hide();}
+			for (int i=0;i<2;i++){ 		voting_buttons[i].hide();}
+			for (int i=0;i<3;i++){ 		voting_prompts[i].hide();}
+										back_button.hide();
+		}
+}
+
+void draw_screen(){
+	background(255);
+		if(loaded==true){
+			for (int i=0;i<3;i++){ 		main_menu_buttons[i].show();}
+			for (int i=0;i<2;i++){ 		voting_buttons[i].hide();}
+			for (int i=0;i<3;i++){ 		voting_prompts[i].hide();}
 										back_button.hide();
 		}
 }

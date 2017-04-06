@@ -10,7 +10,7 @@ ControlP5 cp5;
 PImage error_msg, thank_you_msg;
 int page, idNumber, timer;
 int alphaValue = 0;
-double fade_speed = 10;
+double fade_speed = 2;
 boolean loaded = false;
 boolean empty_string_made = false;
 boolean name_displayed =false;
@@ -23,10 +23,10 @@ boolean please_vote_responsibly_displayed = false;
 boolean please_vote_responsibly_done = false;
 boolean intro_done = false;
 boolean main_interface_start = false;
-Button[] main_menu_buttons = new Button[3];
+Button[] main_menu_buttons = new Button[6];
 Button[] voting_buttons = new Button[2];
-Textlabel[] voting_prompts = new Textlabel[3];
-Button back_button;
+Textlabel[] voting_prompts = new Textlabel[6];
+Button back_button , reset_button;
 
 //clicked button handles the last clicked button
 String male_first_names[],female_first_names[],name, clicked_button;
@@ -38,8 +38,8 @@ float sex_probability, race_probability, class_probability, district_probability
 boolean printed = false;
 
 void setup(){
-	// myPort = new Serial(this, "COM16", 9600);
-	fullScreen(1);
+	myPort = new Serial(this, "COM19", 9600);
+	fullScreen(2);
 	// size(1280,720);
 	error_msg = loadImage("error_msg.png");
 	thank_you_msg = loadImage("thank_you_msg.png");
@@ -47,7 +47,7 @@ void setup(){
 	cp5 = new ControlP5(this);
 	minim = new Minim(this);
 	song = minim.loadFile("patriot.mp3");
-	// song.loop(1000);
+	song.loop(1000);
 	voting_interface();
 	// Load voting interface elements
 	background(255);
@@ -56,7 +56,7 @@ void setup(){
 	// Generate the character data
 	message = character_generator();
 	println(message);
-	// myPort.write(message);
+	myPort.write(message);
 }
 
 void draw(){
@@ -71,6 +71,14 @@ void draw(){
 		fill(224,22,43);
 		textAlign(CENTER);
 		text("Welcome, " + name, width/2,100);
+		textSize(20);
+		text("Not " + name + "?" +" Click here:", width/2 - 75,150);
+		stroke(0);
+		line(480,0,480,height);
+		line(960,0,960,height);
+		line(1440,0,1440,height);
+		line(0, 540, width, 540);
+
 	}
 }
 
@@ -212,7 +220,7 @@ void district_birthday_display(String district, String birthday){
 		}
 	}
 }
-
+//Vote responsibly or you don't matter
 void please_vote_responsibly(){
 	if(please_vote_responsibly_displayed == false && alphaValue<255){
 		alphaValue += fade_speed;
@@ -231,11 +239,11 @@ void please_vote_responsibly(){
 		text("Please vote responsibly.", width/2,height/2);
 		if (alphaValue ==0){
 			please_vote_responsibly_done = true;
+			myPort.write(message);
 			intro_done = true;
 			clear_screen();
 		}
 	}
-
 }
 
 //Changed demographics to Pew demographic projections in 2050
@@ -382,23 +390,38 @@ void controlEvent(ControlEvent theEvent){
 
 void voting_interface(){
 	main_menu_buttons[0] = cp5.addButton("choice1")
-	.setPosition(width/2-200, 200)
+	.setPosition(480, 300)
 	.setCaptionLabel("IMMIGRATION")
-	.setSize(400,60);
+	.setSize(240,60);
 	// .setImages(loadImage("test.png"),loadImage("test.png"),loadImage("test.png"))
 	//(defaultImage, rolloverImage, pressedImage)
 	// .updateSize()
 	//updateSize changes the button area to that of the image, this will be useful later when
 	//replacing the buttons with my own custom ones
 	main_menu_buttons[1] = cp5.addButton("choice2")
-	.setPosition(width/2-200,400)
+	.setPosition(480,500)
 	.setCaptionLabel("ECONOMICS")
-	.setSize(400,60);
+	.setSize(240,60);
 
 	main_menu_buttons[2] = cp5.addButton("choice3")
-	.setPosition(width/2-200,600)
+	.setPosition(480,700)
 	.setCaptionLabel("PATRIOTISM")
-	.setSize(400,60);
+	.setSize(240,60);
+
+	main_menu_buttons[3] = cp5.addButton("choice4")
+	.setPosition(1200,300)
+	.setCaptionLabel("ELECTED POSITIONS")
+	.setSize(240,60);
+
+	main_menu_buttons[4] = cp5.addButton("choice5")
+	.setPosition(1200,500)
+	.setCaptionLabel("EDUCATION")
+	.setSize(240,60);
+
+	main_menu_buttons[5] = cp5.addButton("choice6")
+	.setPosition(1200,700)
+	.setCaptionLabel("TERRORISM")
+	.setSize(240,60);
 
 	voting_prompts[0] = cp5.addTextlabel("voting_prompt1")
 	.setText("The recent ban on immigration into the city has been proven effective.\nThe Department of City Safety and Security advises to continue the ban.\nPlease vote.")
@@ -421,6 +444,27 @@ void voting_interface(){
 	.setFont(createFont("Inconsolata", 26))
 	.hide();
 
+	voting_prompts[3] = cp5.addTextlabel("voting_prompt4")
+	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have\never had the opportunity to live in?")
+	.setPosition(width/2-400, 300)
+	.setColorValue(0x00000000)
+	.setFont(createFont("Inconsolata", 26))
+	.hide();
+
+	voting_prompts[4] = cp5.addTextlabel("voting_prompt5")
+	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have\never had the opportunity to live in?")
+	.setPosition(width/2-400, 300)
+	.setColorValue(0x00000000)
+	.setFont(createFont("Inconsolata", 26))
+	.hide();
+
+	voting_prompts[5] = cp5.addTextlabel("voting_prompt6")
+	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have\never had the opportunity to live in?")
+	.setPosition(width/2-400, 300)
+	.setColorValue(0x00000000)
+	.setFont(createFont("Inconsolata", 26))
+	.hide();
+
 	voting_buttons[0] = cp5.addButton("voting_button_yes")
 	.setPosition(width/2 -400, 500)
 	.setSize(150,100)
@@ -437,9 +481,30 @@ void voting_interface(){
 	.setPosition(width-150, height-50)
 	.setSize(100,25)
 	.hide();
+
+	reset_button = cp5.addButton("reset")
+	.setPosition(width/2+50, 130)
+	.setSize(100,30);
+
 	intro_done = false;
 }
 
+void reset(){
+	message = character_generator();
+	empty_string_made = false;
+	name_displayed =false;
+	name_done = false;
+	race_sex_displayed = false;
+	race_sex_done = false;
+	district_birthday_displayed = false;
+	district_birthday_done = false;
+	please_vote_responsibly_displayed = false;
+	please_vote_responsibly_done = false;
+	intro_done = false;
+	main_interface_start = false;
+	song.unmute();
+	println(message);
+}
 
 void error_message(){
 	song.mute();
@@ -447,7 +512,7 @@ void error_message(){
 	imageMode(CENTER);
 	image(error_msg,width/2,height/2);
 	for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-	for (int i=0; i<3;i++){		voting_prompts[i].hide();}
+	for (int i=0; i<6;i++){		voting_prompts[i].hide();}
 								back_button.show();
 }
 
@@ -456,16 +521,17 @@ void thank_you_msg(){
 	imageMode(CENTER);
 	image(thank_you_msg,width/2,height/2);
 	for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-	for (int i=0; i<3;i++){		voting_prompts[i].hide();}
+	for (int i=0; i<6;i++){		voting_prompts[i].hide();}
 								back_button.show();
 }
 
-
+//Displays prompts, takes the prompt number as a parameter
 void vote_yesno_display(int choice_number){
-		for (int i=0; i<3;i++){		main_menu_buttons[i].hide();}
-		for (int i=0; i<2;i++){		voting_buttons[i].show();}
-									voting_prompts[choice_number].show();
-									back_button.show();
+	background(255);
+	for (int i=0; i<6;i++){		main_menu_buttons[i].hide();}
+	for (int i=0; i<2;i++){		voting_buttons[i].show();}
+								voting_prompts[choice_number].show();
+								back_button.show();
 }
 
 // You can write functions that are named after the buttons, stating what to do after the button is pressed.
@@ -473,18 +539,12 @@ void choice1(){
 	background(255);
 	if(loaded==true){
 		vote_yesno_display(0);
-		if(race == "Hispanic" || race == "American Indian or Alaska Native"){
-			error_message();
-		}
 	}
 }
 void choice2(){
 	background(255);
 	if(loaded==true){
 		vote_yesno_display(1);
-		if(social_class == "Lower"){
-			error_message();
-		}
 	}
 }
 void choice3(){
@@ -493,7 +553,24 @@ void choice3(){
 		vote_yesno_display(2);
 	}
 }
-
+void choice4(){
+	background(255);
+	if(loaded==true){
+		vote_yesno_display(3);
+	}
+}
+void choice5(){
+	background(255);
+	if(loaded==true){
+		vote_yesno_display(4);
+	}
+}
+void choice6(){
+	background(255);
+	if(loaded==true){
+		vote_yesno_display(5);
+	}
+}
 
 //So right now I am designing the interface to throw an error whenever you press yes or no, rather than at subject choice.
 //In doing this I can determine whether your demographic throws an error by if-else statements
@@ -516,11 +593,12 @@ void voting_button_no(){
 void back(){
 	background(255);
 	if(loaded==true){
-			for (int i=0; i<3;i++){		main_menu_buttons[i].show();}
+			for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
 			for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-			for (int i=0; i<3;i++){		voting_prompts[i].hide();}
+			for (int i=0; i<6;i++){		voting_prompts[i].hide();}
 										back_button.hide();
 		song.unmute();
+		// placed here because it will unmute the song in the case that it is muted by an error message.
 		}
 }
 
@@ -529,12 +607,15 @@ void back(){
 void clear_screen(){
 	background(255);
 		if(loaded==true){
-			for (int i=0;i<3;i++){ 		main_menu_buttons[i].hide();}
+			for (int i=0;i<6;i++){ 		main_menu_buttons[i].hide();}
 			for (int i=0;i<2;i++){ 		voting_buttons[i].hide();}
 			for (int i=0;i<3;i++){ 		voting_prompts[i].hide();}
 										back_button.hide();
+										reset_button.hide();
 		}
 }
+
+//draw_screen() is not really used right now lol, but I have a feeling I might have to at some point? Maybe? I'll eliminate it later if it turns out I don't
 void draw_screen(){
 	background(255);
 		if(loaded==true){

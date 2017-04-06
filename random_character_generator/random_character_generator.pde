@@ -1,12 +1,16 @@
 import processing.serial.*;
 import controlP5.*;
 import de.looksgood.ani.*;
+import ddf.minim.*;
+
+Minim minim;
+AudioPlayer song;
 // GUI variables
 ControlP5 cp5;
-PImage error_msg;
+PImage error_msg, thank_you_msg;
 int page, idNumber, timer;
 int alphaValue = 0;
-int fade_speed = 10;
+double fade_speed = 10;
 boolean loaded = false;
 boolean empty_string_made = false;
 boolean name_displayed =false;
@@ -23,6 +27,8 @@ Button[] main_menu_buttons = new Button[3];
 Button[] voting_buttons = new Button[2];
 Textlabel[] voting_prompts = new Textlabel[3];
 Button back_button;
+
+//clicked button handles the last clicked button
 String male_first_names[],female_first_names[],name, clicked_button;
 String empty_string = "";
 // Randomizer and Serial communication variables
@@ -33,11 +39,15 @@ boolean printed = false;
 
 void setup(){
 	// myPort = new Serial(this, "COM16", 9600);
-	fullScreen();
+	fullScreen(1);
 	// size(1280,720);
 	error_msg = loadImage("error_msg.png");
+	thank_you_msg = loadImage("thank_you_msg.png");
 	noStroke();
 	cp5 = new ControlP5(this);
+	minim = new Minim(this);
+	song = minim.loadFile("patriot.mp3");
+	// song.loop(1000);
 	voting_interface();
 	// Load voting interface elements
 	background(255);
@@ -62,8 +72,6 @@ void draw(){
 		textAlign(CENTER);
 		text("Welcome, " + name, width/2,100);
 	}
-
-
 }
 
 String character_generator(){
@@ -432,70 +440,77 @@ void voting_interface(){
 	intro_done = false;
 }
 
+
+void error_message(){
+	song.mute();
+	background(255);
+	imageMode(CENTER);
+	image(error_msg,width/2,height/2);
+	for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+	for (int i=0; i<3;i++){		voting_prompts[i].hide();}
+								back_button.show();
+}
+
+void thank_you_msg(){
+	background(255);
+	imageMode(CENTER);
+	image(thank_you_msg,width/2,height/2);
+	for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+	for (int i=0; i<3;i++){		voting_prompts[i].hide();}
+								back_button.show();
+}
+
+
+void vote_yesno_display(int choice_number){
+		for (int i=0; i<3;i++){		main_menu_buttons[i].hide();}
+		for (int i=0; i<2;i++){		voting_buttons[i].show();}
+									voting_prompts[choice_number].show();
+									back_button.show();
+}
+
 // You can write functions that are named after the buttons, stating what to do after the button is pressed.
 void choice1(){
 	background(255);
 	if(loaded==true){
-		for (int i=0; i<3;i++){		main_menu_buttons[i].hide();}
-		for (int i=0; i<2;i++){		voting_buttons[i].show();}
-									voting_prompts[0].show();
-									back_button.show();
+		vote_yesno_display(0);
 		if(race == "Hispanic" || race == "American Indian or Alaska Native"){
-			imageMode(CENTER);
-			image(error_msg,width/2,height/2);
-			for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-			for (int i=0; i<3;i++){		voting_prompts[i].hide();}
-										back_button.show();
+			error_message();
 		}
 	}
 }
 void choice2(){
 	background(255);
 	if(loaded==true){
-		for (int i=0; i<3;i++){		main_menu_buttons[i].hide();}
-		for (int i=0; i<2;i++){		voting_buttons[i].show();}
-									voting_prompts[1].show();
-									back_button.show();
+		vote_yesno_display(1);
 		if(social_class == "Lower"){
-			imageMode(CENTER);
-			image(error_msg,width/2,height/2);
-			for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-			for (int i=0; i<3;i++){		voting_prompts[i].hide();}
-										back_button.show();
+			error_message();
 		}
 	}
 }
 void choice3(){
 	background(255);
 	if(loaded==true){
-		for (int i=0; i<3;i++){		main_menu_buttons[i].hide();}
-		for (int i=0; i<2;i++){		voting_buttons[i].show();}
-									voting_prompts[2].show();
-									back_button.show();
+		vote_yesno_display(2);
 	}
 }
+
+
+//So right now I am designing the interface to throw an error whenever you press yes or no, rather than at subject choice.
+//In doing this I can determine whether your demographic throws an error by if-else statements
 void voting_button_yes(){
 	background(255);
 	if(loaded==true){
-		for (int i=0; i<3;i++){		main_menu_buttons[i].show();}
-		for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-		for (int i=0; i<3;i++){		voting_prompts[i].hide();}
-									back_button.hide();
+		thank_you_msg();
 	}
 }
 void voting_button_no(){
 	background(255);
-	if(loaded==true && clicked_button!="choice3"){
-		for (int i=0; i<3;i++){		main_menu_buttons[i].show();}
-		for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-		for (int i=0; i<3;i++){		voting_prompts[i].hide();}
-									back_button.hide();
-	}if(clicked_button=="choice3"){
-		imageMode(CENTER);
-		image(error_msg,width/2,height/2);
-		for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-		for (int i=0; i<3;i++){		voting_prompts[i].hide();}
-									back_button.show();
+	if(loaded==true){
+		if(clicked_button=="choice3"){
+			error_message();
+		}else{
+			thank_you_msg();
+		}
 	}
 }
 void back(){
@@ -505,9 +520,12 @@ void back(){
 			for (int i=0; i<2;i++){		voting_buttons[i].hide();}
 			for (int i=0; i<3;i++){		voting_prompts[i].hide();}
 										back_button.hide();
+		song.unmute();
 		}
 }
 
+//so far, clear_screen() only really has to be used once, at the beginning of the introduction but I am still determining the order in which to present
+//the user information so I will clean it up later.
 void clear_screen(){
 	background(255);
 		if(loaded==true){
@@ -517,7 +535,6 @@ void clear_screen(){
 										back_button.hide();
 		}
 }
-
 void draw_screen(){
 	background(255);
 		if(loaded==true){

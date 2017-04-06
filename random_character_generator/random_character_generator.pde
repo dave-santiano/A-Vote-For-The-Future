@@ -6,16 +6,25 @@ ControlP5 cp5;
 PImage error_msg;
 int page, idNumber, timer;
 int alphaValue = 0;
+int fade_speed = 10;
 boolean loaded = false;
+boolean empty_string_made = false;
 boolean name_displayed =false;
 boolean name_done = false;
 boolean race_sex_displayed = false;
 boolean race_sex_done = false;
+boolean district_birthday_displayed = false;
+boolean district_birthday_done = false;
+boolean please_vote_responsibly_displayed = false;
+boolean please_vote_responsibly_done = false;
+boolean intro_done = false;
+boolean main_interface_start = false;
 Button[] main_menu_buttons = new Button[3];
 Button[] voting_buttons = new Button[2];
 Textlabel[] voting_prompts = new Textlabel[3];
 Button back_button;
 String male_first_names[],female_first_names[],name, clicked_button;
+String empty_string = "";
 // Randomizer and Serial communication variables
 Serial myPort;
 String sex, race, social_class, birthday, id, message, district;
@@ -24,8 +33,8 @@ boolean printed = false;
 
 void setup(){
 	// myPort = new Serial(this, "COM16", 9600);
-	// fullScreen();
-	size(1280,720);
+	fullScreen();
+	// size(1280,720);
 	error_msg = loadImage("error_msg.png");
 	noStroke();
 	cp5 = new ControlP5(this);
@@ -43,18 +52,18 @@ void setup(){
 void draw(){
 	// The beginning of the draw loop should have the different introductory sentences, an if statement should cover whether they are drawn or not.
 	if(name_done == false){name_display(name);}
-	else if(race_sex_done == false){println(alphaValue);race_sex_display(race, sex);}
-	// textSize(40);
-	// fill(224,22,43);
-	// textAlign(LEFT);
-	// text("Welcome, " + name,50,100);
-	// textSize(25);
-	// text(message,50,200);
-	// textSize(40);
-	// fill(224,22,43);
-	// textAlign(RIGHT);
-	// text(id, width - 50, 100);
-	// textSize(60);
+	else if(race_sex_done == false){race_sex_display(race, sex);}
+	else if(district_birthday_done == false){district_birthday_display(district, birthday);}
+	else if(please_vote_responsibly_done == false){please_vote_responsibly();}
+	else if(intro_done == true){voting_interface(); main_interface_start = true;}
+	if (main_interface_start == true){
+		textSize(40);
+		fill(224,22,43);
+		textAlign(CENTER);
+		text("Welcome, " + name, width/2,100);
+	}
+
+
 }
 
 String character_generator(){
@@ -74,35 +83,32 @@ String character_generator(){
 	return message;
 }
 
+//You are name
 void name_display(String name){
 	// fade-in
 	if(name_displayed == false && alphaValue<255){
-		alphaValue++;
+		alphaValue+=fade_speed;
 		clear_screen();
-		background(255);
 		textSize(40);
-		fill(0,alphaValue+50);
+		fill(0,alphaValue);
 		textAlign(CENTER);
-		text("You are ",width/2,height/2);
-		textSize(40);
+		text("You are ",width/2 - textWidth(name)/2,height/2);
+		//translate the text to the left the amount of pixels that name takes up
 		fill(224,22,43, alphaValue);
-		textAlign(LEFT);
-		text(name, width/2+75, height/2);
+		text(name, width/2 +textWidth("You are ")/2, height/2);
 	}
 	// fade-out
 	else{
 		name_displayed = true;
-		alphaValue--;
+		alphaValue-=fade_speed;
 		clear_screen();
-		background(255);
 		textSize(40);
 		fill(0,alphaValue);
 		textAlign(CENTER);
-		text("You are ",width/2,height/2);
-		textSize(40);
+		text("You are ",width/2 - textWidth(name)/2,height/2);
+		//translate the text to the left the amount of pixels that name takes up
 		fill(224,22,43, alphaValue);
-		textAlign(LEFT);
-		text(name, width/2+75, height/2);
+		text(name, width/2 +textWidth("You are ")/2, height/2);
 		// stop drawing the name here once opacity is at 0%
 		if(alphaValue ==0){
 			name_done = true;
@@ -111,47 +117,119 @@ void name_display(String name){
 	}
 }
 
+//You are an/a race sex
 void race_sex_display(String race, String sex){
 	// fade-in
 	if(race_sex_displayed == false && alphaValue<255){
-		alphaValue++;
+		alphaValue+=fade_speed;
 		clear_screen();
-		background(255);
 		textSize(40);
 		fill(0,alphaValue);
 		textAlign(CENTER);
-		//gotta
+		//gotta be grammatically correct here
 		if(race == "Asian" || race == "American Indian or Alaska Native"){
-			text("You are an ",width/2,height/2);
+			text("You are an ",width/2 - textWidth(race + ' ' +sex)/2,height/2);
 		}else{
-			text("You are a ",width/2,height/2);
+			text("You are a ",width/2 - textWidth(race + ' ' +sex)/2,height/2);
 		}
-		textSize(40);
 		fill(224,22,43, alphaValue);
-		textAlign(LEFT);
-		text(race, width/2+75, height/2);
-		text(sex, width/2+200,height/2);
+		if(race == "Asian" || race == "American Indian or Alaska Native"){
+			text(race + ' ' + sex, width/2 + textWidth("You are an ")/2, height/2);
+		}else{
+			text(race + ' ' + sex, width/2 + textWidth("You are a ")/2, height/2);
+		}
 	}
 	// fade-out
 	else{
 		race_sex_displayed = true;
-		alphaValue--;
+		alphaValue-=fade_speed;
 		clear_screen();
-		background(255);
 		textSize(40);
 		fill(0,alphaValue);
 		textAlign(CENTER);
-		text("You are an ",width/2,height/2);
-		textSize(40);
+		if(race == "Asian" || race == "American Indian or Alaska Native"){
+			text("You are an ",width/2 - textWidth(race + ' ' +sex)/2,height/2);
+		}else{
+			text("You are a ",width/2 - textWidth(race + ' ' +sex)/2,height/2);
+		}
 		fill(224,22,43, alphaValue);
-		textAlign(LEFT);
-		text(race, width/2+75, height/2);
+		if(race == "Asian" || race == "American Indian or Alaska Native"){
+			text(race + ' ' + sex, width/2 + textWidth("You are an ")/2, height/2);
+		}else{
+			text(race + ' ' + sex, width/2 + textWidth("You are a ")/2, height/2);
+		}
 		// stop drawing the name here once opacity is at 0%
 		if(alphaValue ==0){
 			race_sex_done = true;
+			clear_screen();
 		}
 	}
 }
+
+//Born in district # on ??/??/????
+void district_birthday_display(String district, String birthday){
+	// fade-in
+	if(district_birthday_displayed == false && alphaValue<255){
+		alphaValue+=fade_speed;
+		clear_screen();
+		textSize(40);
+		fill(0,alphaValue);
+		textAlign(CENTER);
+		text("Born in ",width/2 - textWidth(district + " on " + birthday + " to the " + social_class + " class")/2,height/2);
+		fill(224,22,43, alphaValue);
+		text(district + " on " + birthday + " to the " + social_class + " class", width/2 + textWidth("Born in ")/2, height/2);
+		fill(0,alphaValue);
+		text('\n' + "in the city of ",width/2 - textWidth("in the city of ")/2, height/2);
+		fill(0,40,104,alphaValue);
+		text('\n' + "Patriotopia.",width/2 + textWidth("Patriotopia.")/2,height/2);
+	}
+	// fade-out
+	else{
+		district_birthday_displayed = true;
+		alphaValue-=fade_speed;
+		clear_screen();
+		textSize(40);
+		fill(0,alphaValue);
+		textAlign(CENTER);
+		text("Born in ",width/2 - textWidth(district + " on " + birthday + " to the " + social_class + " class")/2,height/2);
+		fill(224,22,43, alphaValue);
+		text(district + " on " + birthday + " to the " + social_class + " class", width/2 + textWidth("Born in ")/2, height/2);
+		fill(0,alphaValue);
+		text('\n' + "in the city of ",width/2 - textWidth("in the city of ")/2, height/2);
+		fill(0,40,104,alphaValue);
+		text('\n' + "Patriotopia.",width/2 + textWidth("Patriotopia.")/2,height/2);
+		if(alphaValue ==0){
+			district_birthday_done = true;
+			clear_screen();
+		}
+	}
+}
+
+void please_vote_responsibly(){
+	if(please_vote_responsibly_displayed == false && alphaValue<255){
+		alphaValue += fade_speed;
+		clear_screen();
+		textSize(40);
+		fill(0,alphaValue);
+		textAlign(CENTER);
+		text("Please vote responsibly.", width/2,height/2);
+	}else{
+		please_vote_responsibly_displayed = true;
+		alphaValue -= fade_speed;
+		clear_screen();
+		textSize(40);
+		fill(0,alphaValue);
+		textAlign(CENTER);
+		text("Please vote responsibly.", width/2,height/2);
+		if (alphaValue ==0){
+			please_vote_responsibly_done = true;
+			intro_done = true;
+			clear_screen();
+		}
+	}
+
+}
+
 //Changed demographics to Pew demographic projections in 2050
 String race_determiner(float race_probability){
 	if (race_probability <= .47){
@@ -270,9 +348,9 @@ String district_determiner(float district_probability){
 }
 
 String birthday_generator(){
-	int month = int(random(0,11));
+	int month = int(random(1,12));
 	int year = int(random(2170,2240));
-	if (month == 0 || month == 2 || month == 4 || month == 6 || month == 7 || month == 9 || month == 11){
+	if (month == 1 || month == 2 || month == 4 || month == 6 || month == 7 || month == 9 || month == 12){
 		int day = int(random(1,32));
 		String birthday = month + "/" + day + "/" + year;
 		return birthday;
@@ -280,7 +358,7 @@ String birthday_generator(){
 		int day = int(random(1,31));
 		String birthday = month + "/" + day + "/" + year;
 		return birthday;
-	}else if (month == 1){
+	}else if (month == 2){
 		int day = int(random(1,29));
 		String birthday = month + "/" + day + "/" + year;
 		return birthday;
@@ -351,6 +429,7 @@ void voting_interface(){
 	.setPosition(width-150, height-50)
 	.setSize(100,25)
 	.hide();
+	intro_done = false;
 }
 
 // You can write functions that are named after the buttons, stating what to do after the button is pressed.
@@ -449,3 +528,19 @@ void draw_screen(){
 		}
 }
 
+
+// I was excited to use a function that would return a String composed of empty characters,
+// but I guess that will have to be for another time.
+// String empty_string_maker(String the_length_to_append){
+// 	if (empty_string!= ""){
+// 		empty_string = "";
+// 		empty_string_made = false;
+// 	}
+// 	if (empty_string_made == false){
+// 		for(int j=0;j<the_length_to_append.length();j++){
+// 			empty_string += " ";
+// 		}
+// 		empty_string_made = true;
+// 	}
+// 	return empty_string;
+// }

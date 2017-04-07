@@ -9,20 +9,14 @@ AudioPlayer song;
 ControlP5 cp5;
 PImage error_msg, thank_you_msg;
 int page, idNumber, timer;
+int choice_width = 300;
+int choice_height = 100;
 int alphaValue = 0;
-double fade_speed = 2;
-boolean loaded = false;
-boolean empty_string_made = false;
-boolean name_displayed =false;
-boolean name_done = false;
-boolean race_sex_displayed = false;
-boolean race_sex_done = false;
-boolean district_birthday_displayed = false;
-boolean district_birthday_done = false;
-boolean please_vote_responsibly_displayed = false;
-boolean please_vote_responsibly_done = false;
-boolean intro_done = false;
-boolean main_interface_start = false;
+int ticker_posx = width;
+double fade_speed = 30;
+boolean loaded = false, empty_string_made = false, name_displayed =false, name_done = false, race_sex_displayed = false, race_sex_done = false, district_birthday_displayed = false, district_birthday_done = false, please_vote_responsibly_displayed = false, please_vote_responsibly_done = false, intro_done = false, main_interface_start = false, welcome_text_displayed = false, welcome_text_done = false;
+boolean voted_yes = false, voted_no = false;
+String ticker_message = "District 6 residents are encountering increased incidents of theft.";
 Button[] main_menu_buttons = new Button[6];
 Button[] voting_buttons = new Button[2];
 Textlabel[] voting_prompts = new Textlabel[6];
@@ -38,8 +32,8 @@ float sex_probability, race_probability, class_probability, district_probability
 boolean printed = false;
 
 void setup(){
-	myPort = new Serial(this, "COM19", 9600);
-	fullScreen(2);
+	// myPort = new Serial(this, "COM19", 9600);
+	fullScreen();
 	// size(1280,720);
 	error_msg = loadImage("error_msg.png");
 	thank_you_msg = loadImage("thank_you_msg.png");
@@ -47,26 +41,26 @@ void setup(){
 	cp5 = new ControlP5(this);
 	minim = new Minim(this);
 	song = minim.loadFile("patriot.mp3");
-	song.loop(1000);
+	// song.loop(1000);
 	voting_interface();
-	// Load voting interface elements
-	background(255);
 	loaded = true;
 	Ani.init(this);
-	// Generate the character data
 	message = character_generator();
 	println(message);
-	myPort.write(message);
+	// myPort.write(message);
 }
 
 void draw(){
 	// The beginning of the draw loop should have the different introductory sentences, an if statement should cover whether they are drawn or not.
-	if(name_done == false){name_display(name);}
+	if (welcome_text_done == false){welcome_text();}
+	else if(name_done == false){name_display(name);}
 	else if(race_sex_done == false){race_sex_display(race, sex);}
 	else if(district_birthday_done == false){district_birthday_display(district, birthday);}
 	else if(please_vote_responsibly_done == false){please_vote_responsibly();}
 	else if(intro_done == true){voting_interface(); main_interface_start = true;}
+
 	if (main_interface_start == true){
+		background(255);
 		textSize(40);
 		fill(224,22,43);
 		textAlign(CENTER);
@@ -74,11 +68,21 @@ void draw(){
 		textSize(20);
 		text("Not " + name + "?" +" Click here:", width/2 - 75,150);
 		stroke(0);
-		line(480,0,480,height);
-		line(960,0,960,height);
-		line(1440,0,1440,height);
-		line(0, 540, width, 540);
-
+		line(width/4,0,width/4,height);
+		line((width/4)*2,0,(width/4)*2,height);
+		line((width/4)*3,0,(width/4)*3,height);
+		line(0, height/2, width, height/2);
+		text(ticker_message, ticker_posx, height - 100);
+		ticker_posx -= 1;
+		if (ticker_posx == -int(textWidth(ticker_message))){
+			ticker_posx = width + 100;
+		}
+		if (voted_yes == true){
+			thank_you_msg();
+		}
+		if (voted_no == true){
+			thank_you_msg();
+		}
 	}
 }
 
@@ -99,6 +103,38 @@ String character_generator(){
 	return message;
 }
 
+//Welcome to the voting terminal!
+void welcome_text(){
+	if(welcome_text_displayed == false && alphaValue<255){
+		alphaValue += fade_speed;
+		clear_screen();
+		textSize(40);
+		fill(0,alphaValue);
+		textAlign(CENTER);
+		text("Welcome to", width/2-textWidth(" Patriotopia Voting Terminal #689201")/2,height/2);
+		fill(0,40,104,alphaValue);
+		text(" Patriotopia ", width/2 + textWidth("Welcome to")/2 - textWidth("Voting Terminal #689201")/2,height/2);
+		fill(0, alphaValue);
+		text("Voting Terminal #689201", width/2+textWidth("Welcome to Patriotopia ")/2,height/2);
+	}else{
+		welcome_text_displayed = true;
+		alphaValue -= fade_speed;
+		clear_screen();
+		textSize(40);
+		fill(0,alphaValue);
+		textAlign(CENTER);
+		text("Welcome to", width/2-textWidth(" Patriotopia Voting Terminal #689201")/2,height/2);
+		fill(0,40,104,alphaValue);
+		text(" Patriotopia ", width/2 + textWidth("Welcome to")/2 - textWidth("Voting Terminal #689201")/2,height/2);
+		fill(0, alphaValue);
+		text("Voting Terminal #689201", width/2+textWidth("Welcome to Patriotopia ")/2,height/2);
+		if (alphaValue ==0){
+			welcome_text_done = true;
+			clear_screen();
+		}
+	}
+}
+
 //You are name
 void name_display(String name){
 	// fade-in
@@ -108,10 +144,10 @@ void name_display(String name){
 		textSize(40);
 		fill(0,alphaValue);
 		textAlign(CENTER);
-		text("You are ",width/2 - textWidth(name)/2,height/2);
+		text("Our records show you are ",width/2 - textWidth(name)/2,height/2);
 		//translate the text to the left the amount of pixels that name takes up
 		fill(224,22,43, alphaValue);
-		text(name, width/2 +textWidth("You are ")/2, height/2);
+		text(name, width/2 +textWidth("Our records show you are ")/2, height/2);
 	}
 	// fade-out
 	else{
@@ -121,10 +157,10 @@ void name_display(String name){
 		textSize(40);
 		fill(0,alphaValue);
 		textAlign(CENTER);
-		text("You are ",width/2 - textWidth(name)/2,height/2);
+		text("Our records show you are ",width/2 - textWidth(name)/2,height/2);
 		//translate the text to the left the amount of pixels that name takes up
 		fill(224,22,43, alphaValue);
-		text(name, width/2 +textWidth("You are ")/2, height/2);
+		text(name, width/2 +textWidth("Our records show you are ")/2, height/2);
 		// stop drawing the name here once opacity is at 0%
 		if(alphaValue ==0){
 			name_done = true;
@@ -239,7 +275,7 @@ void please_vote_responsibly(){
 		text("Please vote responsibly.", width/2,height/2);
 		if (alphaValue ==0){
 			please_vote_responsibly_done = true;
-			myPort.write(message);
+			// myPort.write(message);
 			intro_done = true;
 			clear_screen();
 		}
@@ -390,38 +426,38 @@ void controlEvent(ControlEvent theEvent){
 
 void voting_interface(){
 	main_menu_buttons[0] = cp5.addButton("choice1")
-	.setPosition(480, 300)
+	.setPosition(width/4, height/4)
 	.setCaptionLabel("IMMIGRATION")
-	.setSize(240,60);
+	.setSize(choice_width,choice_height);
 	// .setImages(loadImage("test.png"),loadImage("test.png"),loadImage("test.png"))
 	//(defaultImage, rolloverImage, pressedImage)
 	// .updateSize()
 	//updateSize changes the button area to that of the image, this will be useful later when
 	//replacing the buttons with my own custom ones
 	main_menu_buttons[1] = cp5.addButton("choice2")
-	.setPosition(480,500)
+	.setPosition(width/4,(height/4)*2)
 	.setCaptionLabel("ECONOMICS")
-	.setSize(240,60);
+	.setSize(choice_width,choice_height);
 
 	main_menu_buttons[2] = cp5.addButton("choice3")
-	.setPosition(480,700)
+	.setPosition(width/4,(height/4)*3)
 	.setCaptionLabel("PATRIOTISM")
-	.setSize(240,60);
+	.setSize(choice_width,choice_height);
 
 	main_menu_buttons[3] = cp5.addButton("choice4")
-	.setPosition(1200,300)
+	.setPosition((width/4)*3 - choice_width,height/4)
 	.setCaptionLabel("ELECTED POSITIONS")
-	.setSize(240,60);
+	.setSize(choice_width,choice_height);
 
 	main_menu_buttons[4] = cp5.addButton("choice5")
-	.setPosition(1200,500)
+	.setPosition((width/4)*3 - choice_width,(height/4)*2)
 	.setCaptionLabel("EDUCATION")
-	.setSize(240,60);
+	.setSize(choice_width,choice_height);
 
 	main_menu_buttons[5] = cp5.addButton("choice6")
-	.setPosition(1200,700)
+	.setPosition((width/4)*3 - choice_width,(height/4)*3)
 	.setCaptionLabel("TERRORISM")
-	.setSize(240,60);
+	.setSize(choice_width,choice_height);
 
 	voting_prompts[0] = cp5.addTextlabel("voting_prompt1")
 	.setText("The recent ban on immigration into the city has been proven effective.\nThe Department of City Safety and Security advises to continue the ban.\nPlease vote.")
@@ -490,6 +526,7 @@ void voting_interface(){
 }
 
 void reset(){
+	background(255);
 	message = character_generator();
 	empty_string_made = false;
 	name_displayed =false;
@@ -500,6 +537,8 @@ void reset(){
 	district_birthday_done = false;
 	please_vote_responsibly_displayed = false;
 	please_vote_responsibly_done = false;
+	welcome_text_displayed = false;
+	welcome_text_done = false;
 	intro_done = false;
 	main_interface_start = false;
 	song.unmute();
@@ -508,7 +547,6 @@ void reset(){
 
 void error_message(){
 	song.mute();
-	background(255);
 	imageMode(CENTER);
 	image(error_msg,width/2,height/2);
 	for (int i=0; i<2;i++){		voting_buttons[i].hide();}
@@ -517,7 +555,6 @@ void error_message(){
 }
 
 void thank_you_msg(){
-	background(255);
 	imageMode(CENTER);
 	image(thank_you_msg,width/2,height/2);
 	for (int i=0; i<2;i++){		voting_buttons[i].hide();}
@@ -527,46 +564,39 @@ void thank_you_msg(){
 
 //Displays prompts, takes the prompt number as a parameter
 void vote_yesno_display(int choice_number){
-	background(255);
 	for (int i=0; i<6;i++){		main_menu_buttons[i].hide();}
 	for (int i=0; i<2;i++){		voting_buttons[i].show();}
 								voting_prompts[choice_number].show();
 								back_button.show();
 }
 
-// You can write functions that are named after the buttons, stating what to do after the button is pressed.
+// These control what happens when you choose each individual voting option
 void choice1(){
-	background(255);
 	if(loaded==true){
 		vote_yesno_display(0);
 	}
 }
 void choice2(){
-	background(255);
 	if(loaded==true){
 		vote_yesno_display(1);
 	}
 }
 void choice3(){
-	background(255);
 	if(loaded==true){
 		vote_yesno_display(2);
 	}
 }
 void choice4(){
-	background(255);
 	if(loaded==true){
 		vote_yesno_display(3);
 	}
 }
 void choice5(){
-	background(255);
 	if(loaded==true){
 		vote_yesno_display(4);
 	}
 }
 void choice6(){
-	background(255);
 	if(loaded==true){
 		vote_yesno_display(5);
 	}
@@ -575,29 +605,29 @@ void choice6(){
 //So right now I am designing the interface to throw an error whenever you press yes or no, rather than at subject choice.
 //In doing this I can determine whether your demographic throws an error by if-else statements
 void voting_button_yes(){
-	background(255);
 	if(loaded==true){
 		thank_you_msg();
+		voted_yes = true;
 	}
 }
 void voting_button_no(){
-	background(255);
 	if(loaded==true){
 		if(clicked_button=="choice3"){
 			error_message();
 		}else{
-			thank_you_msg();
+			voted_no = true;
 		}
 	}
 }
 void back(){
-	background(255);
 	if(loaded==true){
 			for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
 			for (int i=0; i<2;i++){		voting_buttons[i].hide();}
 			for (int i=0; i<6;i++){		voting_prompts[i].hide();}
 										back_button.hide();
 		song.unmute();
+		voted_yes = false;
+		voted_no = false;
 		// placed here because it will unmute the song in the case that it is muted by an error message.
 		}
 }
@@ -625,20 +655,3 @@ void draw_screen(){
 										back_button.hide();
 		}
 }
-
-
-// I was excited to use a function that would return a String composed of empty characters,
-// but I guess that will have to be for another time.
-// String empty_string_maker(String the_length_to_append){
-// 	if (empty_string!= ""){
-// 		empty_string = "";
-// 		empty_string_made = false;
-// 	}
-// 	if (empty_string_made == false){
-// 		for(int j=0;j<the_length_to_append.length();j++){
-// 			empty_string += " ";
-// 		}
-// 		empty_string_made = true;
-// 	}
-// 	return empty_string;
-// }

@@ -7,19 +7,21 @@ Minim minim;
 AudioPlayer song;
 // GUI variables
 ControlP5 cp5;
-PImage error_msg, thank_you_msg;
+PImage error_msg, thank_you_msg, vote_cursor;
+PFont proggy;
 int page, idNumber, timer;
-int choice_width = 300;
+int choice_width = 400;
 int choice_height = 100;
 int alphaValue = 0;
 int ticker_posx = width;
-double fade_speed = 30;
+int ticker_posy = height-100;
+double fade_speed = 60;
 boolean loaded = false, empty_string_made = false, name_displayed =false, name_done = false, race_sex_displayed = false, race_sex_done = false, district_birthday_displayed = false, district_birthday_done = false, please_vote_responsibly_displayed = false, please_vote_responsibly_done = false, intro_done = false, main_interface_start = false, welcome_text_displayed = false, welcome_text_done = false;
 boolean voted_yes = false, voted_no = false;
 String ticker_message = "District 6 residents are encountering increased incidents of theft.";
 Button[] main_menu_buttons = new Button[6];
 Button[] voting_buttons = new Button[2];
-Textlabel[] voting_prompts = new Textlabel[6];
+Textarea[] voting_prompts = new Textarea[6];
 Button back_button , reset_button;
 
 //clicked button handles the last clicked button
@@ -33,8 +35,12 @@ boolean printed = false;
 
 void setup(){
 	// myPort = new Serial(this, "COM19", 9600);
-	fullScreen();
+	fullScreen(2);
+	vote_cursor = loadImage("cursor.png");
+	cursor(vote_cursor,0,0);
 	// size(1280,720);
+	proggy = createFont("ProggySquareTT", 32);
+	textFont(proggy);
 	error_msg = loadImage("error_msg.png");
 	thank_you_msg = loadImage("thank_you_msg.png");
 	noStroke();
@@ -58,24 +64,27 @@ void draw(){
 	else if(district_birthday_done == false){district_birthday_display(district, birthday);}
 	else if(please_vote_responsibly_done == false){please_vote_responsibly();}
 	else if(intro_done == true){voting_interface(); main_interface_start = true;}
-
 	if (main_interface_start == true){
-		background(255);
-		textSize(40);
-		fill(224,22,43);
-		textAlign(CENTER);
-		text("Welcome, " + name, width/2,100);
-		textSize(20);
-		text("Not " + name + "?" +" Click here:", width/2 - 75,150);
-		stroke(0);
-		line(width/4,0,width/4,height);
-		line((width/4)*2,0,(width/4)*2,height);
-		line((width/4)*3,0,(width/4)*3,height);
-		line(0, height/2, width, height/2);
-		text(ticker_message, ticker_posx, height - 100);
-		ticker_posx -= 1;
-		if (ticker_posx == -int(textWidth(ticker_message))){
-			ticker_posx = width + 100;
+			background(255);
+			textSize(50);
+			fill(0,40,104);
+			textAlign(CENTER);
+			text("Welcome to Patriotopia Voting Terminal #689201, ", width/2-textWidth(name)/2,75);
+			fill(224,22,43);
+			text(name, width/2 + textWidth("Welcome to Patriotopia Voting Terminal #689201, ")/2,75);
+			textSize(20);
+			text("Not " + name + "?" +" Click here:", width/2 - 75,150);
+			stroke(0);
+
+			// These lines are here for formatting purposes
+			line(width/4,0,width/4,height);
+			line((width/4)*2,0,(width/4)*2,height);
+			line((width/4)*3,0,(width/4)*3,height);
+			line(0, height/2, width, height/2);
+			text(ticker_message, ticker_posx, ticker_posy);
+			ticker_posx -= 1;
+			if (ticker_posx == -int(textWidth(ticker_message))){
+				ticker_posx = width + 100;
 		}
 		if (voted_yes == true){
 			thank_you_msg();
@@ -229,7 +238,17 @@ void district_birthday_display(String district, String birthday){
 		textAlign(CENTER);
 		text("Born in ",width/2 - textWidth(district + " on " + birthday + " to the " + social_class + " class")/2,height/2);
 		fill(224,22,43, alphaValue);
-		text(district + " on " + birthday + " to the " + social_class + " class", width/2 + textWidth("Born in ")/2, height/2);
+		text(district, width/2 + textWidth("Born in ")/2 - textWidth(" on " + birthday + " to the " + social_class + " class")/2, height/2);
+		fill(0,alphaValue);
+		text(" on " , width/2 + textWidth("Born in " + district )/2 - textWidth(birthday + " to the " + social_class + " class")/2, height/2);
+		fill(225,22,43,alphaValue);
+		text(birthday, width/2 + textWidth("Born in " + district + " on ")/2 - textWidth(" to the " + social_class + " class")/2, height/2);
+		fill(0,alphaValue);
+		text(" to the ", width/2 + textWidth("Born in " + district + " on " + birthday)/2 - textWidth(social_class + " class")/2, height/2);
+		fill(225,22,43,alphaValue);
+		text(social_class, width/2 + textWidth("Born in " + district + " on " + birthday + " to the ")/2 - textWidth(" class")/2, height/2);
+		fill(0,alphaValue);
+		text(" class", width/2 + textWidth("Born in " + district + " on " + birthday + " to the " + social_class)/2, height/2);
 		fill(0,alphaValue);
 		text('\n' + "in the city of ",width/2 - textWidth("in the city of ")/2, height/2);
 		fill(0,40,104,alphaValue);
@@ -245,7 +264,17 @@ void district_birthday_display(String district, String birthday){
 		textAlign(CENTER);
 		text("Born in ",width/2 - textWidth(district + " on " + birthday + " to the " + social_class + " class")/2,height/2);
 		fill(224,22,43, alphaValue);
-		text(district + " on " + birthday + " to the " + social_class + " class", width/2 + textWidth("Born in ")/2, height/2);
+		text(district, width/2 + textWidth("Born in ")/2 - textWidth(" on " + birthday + " to the " + social_class + " class")/2, height/2);
+		fill(0,alphaValue);
+		text(" on " , width/2 + textWidth("Born in " + district )/2 - textWidth(birthday + " to the " + social_class + " class")/2, height/2);
+		fill(225,22,43,alphaValue);
+		text(birthday, width/2 + textWidth("Born in " + district + " on ")/2 - textWidth(" to the " + social_class + " class")/2, height/2);
+		fill(0,alphaValue);
+		text(" to the ", width/2 + textWidth("Born in " + district + " on " + birthday)/2 - textWidth(social_class + " class")/2, height/2);
+		fill(225,22,43,alphaValue);
+		text(social_class, width/2 + textWidth("Born in " + district + " on " + birthday + " to the ")/2 - textWidth(" class")/2, height/2);
+		fill(0,alphaValue);
+		text(" class", width/2 + textWidth("Born in " + district + " on " + birthday + " to the " + social_class)/2, height/2);
 		fill(0,alphaValue);
 		text('\n' + "in the city of ",width/2 - textWidth("in the city of ")/2, height/2);
 		fill(0,40,104,alphaValue);
@@ -428,77 +457,92 @@ void voting_interface(){
 	main_menu_buttons[0] = cp5.addButton("choice1")
 	.setPosition(width/4, height/4)
 	.setCaptionLabel("IMMIGRATION")
-	.setSize(choice_width,choice_height);
-	// .setImages(loadImage("test.png"),loadImage("test.png"),loadImage("test.png"))
-	//(defaultImage, rolloverImage, pressedImage)
-	// .updateSize()
-	//updateSize changes the button area to that of the image, this will be useful later when
-	//replacing the buttons with my own custom ones
+	.setSize(choice_width,choice_height)
+	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
+	// (defaultImage, rolloverImage, pressedImage)
+	.updateSize();
+
 	main_menu_buttons[1] = cp5.addButton("choice2")
 	.setPosition(width/4,(height/4)*2)
 	.setCaptionLabel("ECONOMICS")
-	.setSize(choice_width,choice_height);
+	.setSize(choice_width,choice_height)
+	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
+	// (defaultImage, rolloverImage, pressedImage)
+	.updateSize();
 
 	main_menu_buttons[2] = cp5.addButton("choice3")
 	.setPosition(width/4,(height/4)*3)
 	.setCaptionLabel("PATRIOTISM")
-	.setSize(choice_width,choice_height);
+	.setSize(choice_width,choice_height)
+	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
+	// (defaultImage, rolloverImage, pressedImage)
+	.updateSize();
 
 	main_menu_buttons[3] = cp5.addButton("choice4")
 	.setPosition((width/4)*3 - choice_width,height/4)
 	.setCaptionLabel("ELECTED POSITIONS")
-	.setSize(choice_width,choice_height);
+	.setSize(choice_width,choice_height)
+	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
+	// (defaultImage, rolloverImage, pressedImage)
+	.updateSize();
 
 	main_menu_buttons[4] = cp5.addButton("choice5")
 	.setPosition((width/4)*3 - choice_width,(height/4)*2)
 	.setCaptionLabel("EDUCATION")
-	.setSize(choice_width,choice_height);
+	.setSize(choice_width,choice_height)
+	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
+	// (defaultImage, rolloverImage, pressedImage)
+	.updateSize();
 
 	main_menu_buttons[5] = cp5.addButton("choice6")
 	.setPosition((width/4)*3 - choice_width,(height/4)*3)
 	.setCaptionLabel("TERRORISM")
-	.setSize(choice_width,choice_height);
+	.setSize(choice_width,choice_height)
+	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
+	// (defaultImage, rolloverImage, pressedImage)
+	.updateSize();
 
-	voting_prompts[0] = cp5.addTextlabel("voting_prompt1")
-	.setText("The recent ban on immigration into the city has been proven effective.\nThe Department of City Safety and Security advises to continue the ban.\nPlease vote.")
+	voting_prompts[0] = cp5.addTextarea("voting_prompt1")
+	.setText("The recent ban on immigration into the city has been proven effective. The Department of City Safety and Security advises to continue the ban. Please vote.")
 	.setPosition(width/2-400, 300)
+	.setSize(900,200)
 	.setColorValue(0x00000000)
-	.setFont(createFont("Inconsolata", 26))
+	.setFont(createFont("ProggySquareTT", 26))
 	.hide();
 
-	voting_prompts[1] = cp5.addTextlabel("voting_prompt2")
+	voting_prompts[1] = cp5.addTextarea("voting_prompt2")
 	.setText("Recent studies by government economists say that a new commercial zone\nin District 4 would lead to increased economic growth.\nPlease vote.")
 	.setPosition(width/2-400, 300)
 	.setColorValue(0x00000000)
-	.setFont(createFont("Inconsolata", 26))
+	.setFont(createFont("ProggySquareTT", 26))
 	.hide();
 
-	voting_prompts[2] = cp5.addTextlabel("voting_prompt3")
+	voting_prompts[2] = cp5.addTextarea("voting_prompt3")
 	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have\never had the opportunity to live in?")
 	.setPosition(width/2-400, 300)
 	.setColorValue(0x00000000)
-	.setFont(createFont("Inconsolata", 26))
+	.setFont(createFont("ProggySquareTT", 26))
 	.hide();
 
-	voting_prompts[3] = cp5.addTextlabel("voting_prompt4")
+	voting_prompts[3] = cp5.addTextarea("voting_prompt4")
 	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have\never had the opportunity to live in?")
 	.setPosition(width/2-400, 300)
 	.setColorValue(0x00000000)
-	.setFont(createFont("Inconsolata", 26))
+	.setFont(createFont("ProggySquareTT", 26))
 	.hide();
 
-	voting_prompts[4] = cp5.addTextlabel("voting_prompt5")
+	voting_prompts[4] = cp5.addTextarea("voting_prompt5")
 	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have\never had the opportunity to live in?")
 	.setPosition(width/2-400, 300)
 	.setColorValue(0x00000000)
-	.setFont(createFont("Inconsolata", 26))
+	.setFont(createFont("ProggySquareTT", 26))
 	.hide();
 
-	voting_prompts[5] = cp5.addTextlabel("voting_prompt6")
+	voting_prompts[5] = cp5.addTextarea("voting_prompt6")
 	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have\never had the opportunity to live in?")
 	.setPosition(width/2-400, 300)
 	.setColorValue(0x00000000)
-	.setFont(createFont("Inconsolata", 26))
+	.setFont(createFont("ProggySquareTT", 26))
 	.hide();
 
 	voting_buttons[0] = cp5.addButton("voting_button_yes")

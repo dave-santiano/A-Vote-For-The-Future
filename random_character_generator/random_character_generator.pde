@@ -13,33 +13,35 @@ PFont proggy;
 int page, idNumber, timer;
 int choice_width = 400;
 int choice_height = 100;
-int alphaValue = 0;
+int alphaValue = 255;
 int ticker_posx;
 int ticker_posy;
 int timer_last = 0;
 int intro_text_size = 50;
-double fade_speed = 60; //determines overall fade-in and fade-out speed
+float fade_speed = 60; //determines overall fade-in and fade-out speed
 float animation_x = 0, animation_y = 0;
 //these booleans display whether the different elements of the introduction are done or not.
 boolean loaded = false, name_displayed =false, name_done = false, race_sex_displayed = false, race_sex_done = false, district_birthday_displayed = false, district_birthday_done = false, please_vote_responsibly_displayed = false, please_vote_responsibly_done = false, intro_done = false, main_interface_start = false, welcome_text_displayed = false, welcome_text_done = false;
 //
-boolean voted_yes = false, voted_no = false; //voted yes and voted no are for drawing the thank you message in the draw loop
+boolean voted_yes_thanks = false, voted_no_thanks = false, voted_yes_error = false, voted_no_error = false; //voted yes and voted no are for drawing the thank you message in the draw loop
 String ticker_message = "District 6 residents are encountering increased incidents of theft."; //message for the news ticker
 
 //Arrays for holding the various menu items
 Button[] main_menu_buttons = new Button[6];
 Button[] voting_buttons = new Button[2];
 Textarea[] voting_prompts = new Textarea[6];
-Button back_button , reset_button;
+Button reset_button, begin_button;
 //
 
 //clicked button handles the last clicked button
 String male_first_names[],female_first_names[],name, clicked_button;
-String empty_string = "";
+
 // Randomizer and Serial communication variables
 Serial myPort;
 String sex, race, social_class, birthday, id, message, district;
 float sex_probability, race_probability, class_probability, district_probability;
+boolean voting_sequence_stopped = false;
+boolean idle = true, begin = false;
 
 void setup(){
 	//ticker position has to be set here since the width and height system
@@ -47,7 +49,7 @@ void setup(){
 	ticker_posx=width+int(textWidth(ticker_message));
 	ticker_posy=height-50;
 	// myPort = new Serial(this, "COM19", 9600);
-	fullScreen(1);
+	fullScreen(2);
 	vote_cursor = loadImage("cursor.png"); // load custom cursor
 	cursor(vote_cursor,0,0); //(image, clickcoordinatex, clickcoordinatey)
 	voting_sequence = new AniSequence(this); //start a new animation sequence
@@ -59,12 +61,12 @@ void setup(){
 	minim = new Minim(this);
 	song = minim.loadFile("patriot.mp3"); //load background music and loop a ton of times.
 	// song.loop(1000);
+	idle = true;
 	voting_interface();
 	loaded = true; //loaded makes sure that all the voting interface elements are loaded.
 				   //This is so that there aren't any clashes with any of the variables
 				   //that the voting interface uses.
 	Ani.init(this);
-
 	message = character_generator(); //message with character data for receipt printer
 	/////////////////////////////////////// Animation sequences
 	animation_sequence_instantiator();
@@ -72,28 +74,17 @@ void setup(){
 	// myPort.write(message);
 }
 
-boolean voting_sequence_stopped = false;
-
 void draw(){
-	if(voting_sequence.isEnded() == true && voting_sequence_stopped == false){
-			for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
-			for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-			for (int i=0; i<6;i++){		voting_prompts[i].hide();}
-										back_button.hide();
-			song.unmute();
-			voted_yes = false; //set these two to false to stop rendering the messages
-			voted_no = false;
-			voting_sequence_stopped = true;
-	}
 	// The beginning of the draw loop has the different introductory sentences, an if statement should cover whether they are drawn or not.
-	if (welcome_text_done == false){welcome_text();}
-	else if(name_done == false){name_display(name);}
-	else if(race_sex_done == false){race_sex_display(race, sex);}
-	else if(district_birthday_done == false){district_birthday_display(district, birthday);}
-	else if(please_vote_responsibly_done == false){please_vote_responsibly();}
-	else if(intro_done == true){voting_interface(); main_interface_start = true;}
+	if (idle == true){idled_screen();}else{
+		if (idle == false && welcome_text_done == false){welcome_text();}
+		else if(name_done == false){name_display(name);}
+		else if(race_sex_done == false){race_sex_display(race, sex);}
+		else if(district_birthday_done == false){district_birthday_display(district, birthday);}
+		else if(please_vote_responsibly_done == false){please_vote_responsibly();}
+		else if(intro_done == true){voting_interface();begin_button.hide();main_interface_start = true;}
+	}
 	//introduction display end\\
-
 	if (main_interface_start == true){
 			check_if_idle();
 			/////////////////////////////////////// Constant UI header
@@ -135,14 +126,28 @@ void draw(){
 				ticker_posx = width+int(textWidth(ticker_message));
 			///////////////////////////////////////
 		}
-		///////////////////////////////////////Right now these booleans help draw the thank you message continuously, but I'm still finding a 										 way to remove them
-		if (voted_yes == true){
-			thank_you_msg();
-		}
-		if (voted_no == true){
-			thank_you_msg();
-		}
-		///////////////////////////////////////
+			//These booleans allow the messages to draw continuously in the draw loop
+			if (voted_yes_thanks == true){
+				thank_you_msg();
+			}
+			if (voted_no_thanks == true){
+				thank_you_msg();
+			}
+			if (voted_yes_error == true){
+				error_message();
+			}
+			if (voted_no_error == true){
+				error_message();
+			}
+			if(voting_sequence.isEnded() == true && voting_sequence_stopped == false){
+				for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
+				for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+				for (int i=0; i<6;i++){		voting_prompts[i].hide();}
+				song.unmute();
+				voted_yes_thanks = false; //set these two to false to stop rendering the messages
+				voted_no_thanks = false;
+				voting_sequence_stopped = true;
+			}
 	}
 }
 
@@ -182,6 +187,24 @@ String character_generator(){
 
 //These functions handle the display of the intro.\\
 //Welcome to the voting terminal!
+
+void idled_screen(){
+	main_interface_start = false;
+	clear_screen();
+	textSize(intro_text_size);
+	fill(0, alphaValue);
+	textAlign(CENTER);
+	text("Click here to begin: ", width/2, height/2);
+	if (begin == true) {
+		alphaValue -= fade_speed;
+		if (alphaValue < 0){
+			idle = false;
+			begin = false;
+			reset();
+		}
+	}
+}
+
 void welcome_text(){
 	if(welcome_text_displayed == false && alphaValue<255){
 		alphaValue += fade_speed;
@@ -526,8 +549,19 @@ void controlEvent(ControlEvent theEvent){
 	clicked_button = theEvent.getController().getName();
 }
 
+void begin_button(){
+	begin_button.hide();
+	begin = true;
+}
+
 //populates the voting interface buttons and text on the screen, and also places them into respective arrays.
 void voting_interface(){
+	begin_button = cp5.addButton("begin_button")
+	.setPosition(width/2-120,height/2+30)
+	.setImages(loadImage("begin_button_test.png"),loadImage("begin_button_test.png"),loadImage("begin_button_test.png"))
+	.setSize(200,50)
+	.updateSize();
+
 	main_menu_buttons[0] = cp5.addButton("choice1")
 	.setPosition(width/4-100, height/4-50)
 	.setCaptionLabel("IMMIGRATION")
@@ -644,11 +678,6 @@ void voting_interface(){
 	.setCaptionLabel("NO")
 	.hide();
 
-	back_button = cp5.addButton("back")
-	.setPosition(width-150, 200)
-	.setSize(100,25)
-	.hide();
-
 	reset_button = cp5.addButton("reset")
 	.setPosition(80, 45)
 	.setImages(loadImage("reset_button_test.png"),loadImage("reset_button_test.png"),loadImage("reset_button_test.png"))
@@ -661,6 +690,7 @@ void voting_interface(){
 void reset(){
 	background(255);
 	message = character_generator();
+	alphaValue = 0;
 	name_displayed =false;
 	name_done = false;
 	race_sex_displayed = false;
@@ -673,18 +703,21 @@ void reset(){
 	welcome_text_done = false;
 	intro_done = false;
 	main_interface_start = false;
+	if (idle == true){
+		begin_button.show();
+	}
+	if (idle == false){
+		begin_button.hide();
+	}
 	song.unmute();
 	println(message);
 }
-
-
 
 //Displays prompts, takes the prompt number as a parameter
 void vote_yesno_display(int choice_number){
 	for (int i=0; i<6;i++){		main_menu_buttons[i].hide();}
 	for (int i=0; i<2;i++){		voting_buttons[i].show();}
 								voting_prompts[choice_number].show();
-								back_button.show();
 }
 
 // These control what happens when you choose each individual voting option
@@ -727,19 +760,19 @@ void voting_button_yes(){
 		voting_sequence_stopped = false;
 		thank_you_msg();
 		voting_sequence.start();
-		voted_yes = true;
+		voted_yes_thanks = true;
 	}
 }
 
 void voting_button_no(){
 	if(loaded==true){
 		if(clicked_button=="choice3"){
-			error_message();
+			voted_no_error = true;
 		}else{
 			voting_sequence_stopped = false;
 			thank_you_msg();
 			voting_sequence.start();
-			voted_no = true;
+			voted_no_thanks = true;
 		}
 	}
 }
@@ -750,34 +783,28 @@ void thank_you_msg(){
 	image(thank_you_msg,width/2,height/2,animation_x,animation_y);
 	for (int i=0; i<2;i++){		voting_buttons[i].hide();}
 	for (int i=0; i<6;i++){		voting_prompts[i].hide();}
-								back_button.show();
 }
 
 // draws the error message
 void error_message(){
-	song.mute();
-	imageMode(CENTER);
-	image(error_msg,width/2,height/2);
-	for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-	for (int i=0; i<6;i++){		voting_prompts[i].hide();}
-								back_button.show();
+	if (timer_last < 300){
+		song.mute();
+		clear_screen();
+		imageMode(CENTER);
+		image(error_msg,width/2,height/2);
+		for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+		for (int i=0; i<6;i++){		voting_prompts[i].hide();}
+	}else{
+		voted_no_error = false;
+		voted_yes_error = false;
+		timer_last = 0;
+		for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
+		for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+		for (int i=0; i<6;i++){		voting_prompts[i].hide();}
+									reset_button.show();
+	}
+
 }
-
-
-
-//back button, just to return to the main menu, right now I'm trying to phase it out.
-// void back(){
-// 	if(loaded==true){
-// 			for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
-// 			for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-// 			for (int i=0; i<6;i++){		voting_prompts[i].hide();}
-// 										back_button.hide();
-// 		song.unmute();
-// 		voted_yes = false;
-// 		voted_no = false;
-// 		// placed here because it will unmute the song in the case that it is muted by an error message.
-// 	}
-// }
 
 //so far, clear_screen() only really has to be used once, at the beginning of the introduction but I am still determining the order in which to present
 //the user information so I will clean it up later.
@@ -787,7 +814,6 @@ void clear_screen(){
 			for (int i=0;i<6;i++){ 		main_menu_buttons[i].hide();}
 			for (int i=0;i<2;i++){ 		voting_buttons[i].hide();}
 			for (int i=0;i<3;i++){ 		voting_prompts[i].hide();}
-										back_button.hide();
 										reset_button.hide();
 		}
 }
@@ -799,7 +825,7 @@ void draw_screen(){
 			for (int i=0;i<3;i++){ 		main_menu_buttons[i].show();}
 			for (int i=0;i<2;i++){ 		voting_buttons[i].hide();}
 			for (int i=0;i<3;i++){ 		voting_prompts[i].hide();}
-										back_button.hide();
+
 		}
 }
 
@@ -808,7 +834,9 @@ void check_if_idle(){
 	if (mouseX == pmouseX && mouseY == pmouseY){
 		timer_last += 1;
 		if(timer_last == 3600){
-			reset();
+			begin_button.show();
+			alphaValue = 255;
+			idle = true;
 		}
 	}else{
 		timer_last = 0;

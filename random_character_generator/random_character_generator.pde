@@ -8,7 +8,7 @@ AudioPlayer song;
 AniSequence voting_sequence;
 // GUI variables
 ControlP5 cp5;
-PImage error_msg, thank_you_msg, vote_cursor;
+PImage error_msg, thank_you_msg, vote_cursor, checkmark;
 PFont proggy;
 int page, idNumber, timer;
 int choice_width = 400;
@@ -16,7 +16,8 @@ int choice_height = 100;
 int alphaValue = 255;
 int ticker_posx;
 int ticker_posy;
-int timer_last = 0;
+int idle_timer = 0;
+int error_timer = 0;
 int intro_text_size = 50;
 float fade_speed = 60; //determines overall fade-in and fade-out speed
 float animation_x = 0, animation_y = 0;
@@ -26,13 +27,16 @@ boolean loaded = false, name_displayed =false, name_done = false, race_sex_displ
 boolean voted_yes_thanks = false, voted_no_thanks = false, voted_yes_error = false, voted_no_error = false; //voted yes and voted no are for drawing the thank you message in the draw loop
 String ticker_message = "District 6 residents are encountering increased incidents of theft."; //message for the news ticker
 
+boolean choice_1_picked = false, choice_2_picked = false, choice_3_picked = false, choice_4_picked = false, choice_5_picked = false, choice_6_picked = false;
+boolean on_main_screen = false;
 //Arrays for holding the various menu items
 Button[] main_menu_buttons = new Button[6];
 Button[] voting_buttons = new Button[2];
 Textarea[] voting_prompts = new Textarea[6];
 Button reset_button, begin_button;
 //
-
+int vote_count=0;
+int last_voted_choice;
 //clicked button handles the last clicked button
 String male_first_names[],female_first_names[],name, clicked_button;
 
@@ -41,7 +45,7 @@ Serial myPort;
 String sex, race, social_class, birthday, id, message, district;
 float sex_probability, race_probability, class_probability, district_probability;
 boolean voting_sequence_stopped = false;
-boolean idle = true, begin = false;
+boolean idle = true, begin = false, ended = false;
 
 void setup(){
 	//ticker position has to be set here since the width and height system
@@ -49,7 +53,7 @@ void setup(){
 	ticker_posx=width+int(textWidth(ticker_message));
 	ticker_posy=height-50;
 	// myPort = new Serial(this, "COM19", 9600);
-	fullScreen(2);
+	fullScreen(1);
 	vote_cursor = loadImage("cursor.png"); // load custom cursor
 	cursor(vote_cursor,0,0); //(image, clickcoordinatex, clickcoordinatey)
 	voting_sequence = new AniSequence(this); //start a new animation sequence
@@ -57,6 +61,7 @@ void setup(){
 	textFont(proggy);
 	error_msg = loadImage("error_msg.png"); //load error and thank you messages
 	thank_you_msg = loadImage("thank_you_msg.png");
+	checkmark = loadImage("checkmark.png");
 	cp5 = new ControlP5(this); //load the GUI library
 	minim = new Minim(this);
 	song = minim.loadFile("patriot.mp3"); //load background music and loop a ton of times.
@@ -76,13 +81,17 @@ void setup(){
 
 void draw(){
 	// The beginning of the draw loop has the different introductory sentences, an if statement should cover whether they are drawn or not.
-	if (idle == true){idled_screen();}else{
-		if (idle == false && welcome_text_done == false){welcome_text();}
+		if (ended == true){ending_screen();}
+		else if(idle == true && ended == false){idled_screen();on_main_screen = false;}
+		else if(idle == false && welcome_text_done == false){welcome_text();}
 		else if(name_done == false){name_display(name);}
 		else if(race_sex_done == false){race_sex_display(race, sex);}
 		else if(district_birthday_done == false){district_birthday_display(district, birthday);}
 		else if(please_vote_responsibly_done == false){please_vote_responsibly();}
-		else if(intro_done == true){voting_interface();begin_button.hide();main_interface_start = true;}
+		else if(intro_done == true){voting_interface();begin_button.hide();main_interface_start = true;	on_main_screen = true;}
+
+	if(vote_count == 6){
+		ended = true;
 	}
 	//introduction display end\\
 	if (main_interface_start == true){
@@ -102,15 +111,15 @@ void draw(){
 			///////////////////////////////////////
 
 			/////////////////////////////////////// These lines are here for formatting purposes
-			// stroke(0);
-			// line(width/4,0,width/4,height);
-			// line((width/4)*2,0,(width/4)*2,height);
-			// line((width/4)*3,0,(width/4)*3,height);
-			// line(0, height/2, width, height/2);
+			stroke(0);
+			line(width/4,0,width/4,height);
+			line((width/4)*2,0,(width/4)*2,height);
+			line((width/4)*3,0,(width/4)*3,height);
+			line(0, height/2, width, height/2);
 			///////////////////////////////////////
 
 
-			/////////////////////////////////////// News ticker stuff
+			/////////////////////////////////////// News ticker
 			textSize(32);
 			fill(255);
 			text(ticker_message, ticker_posx, ticker_posy);
@@ -125,7 +134,10 @@ void draw(){
 			if (ticker_posx < -int(textWidth(ticker_message))){
 				ticker_posx = width+int(textWidth(ticker_message));
 			///////////////////////////////////////
-		}
+			}
+			println(on_main_screen);
+			println(choice_1_picked);
+			check_mark_drawer();
 			//These booleans allow the messages to draw continuously in the draw loop
 			if (voted_yes_thanks == true){
 				thank_you_msg();
@@ -147,8 +159,32 @@ void draw(){
 				voted_yes_thanks = false; //set these two to false to stop rendering the messages
 				voted_no_thanks = false;
 				voting_sequence_stopped = true;
+				vote_count += 1;
+				on_main_screen = true;
 			}
 	}
+}
+
+
+void check_mark_drawer(){
+		if(on_main_screen == true && choice_1_picked == true){
+			image(checkmark, width/4-175, height/4, 100,100);
+		}
+		if(on_main_screen == true && choice_2_picked == true){
+			image(checkmark, width/4-175, (height/4)*2, 100,100);
+		}
+		if(on_main_screen == true && choice_3_picked == true){
+			image(checkmark, width/4-175, (height/4)*3, 100,100);
+		}
+		if(on_main_screen == true && choice_4_picked == true){
+			image(checkmark, width/2+100, height/4, 100,100);
+		}
+		if(on_main_screen == true && choice_5_picked == true){
+			image(checkmark, width/2+100, (height/4)*2, 100,100);
+		}
+		if(on_main_screen == true && choice_6_picked == true){
+			image(checkmark, width/2+100, (height/4)*3, 100,100);
+		}
 }
 
 //instantiate the animation sequences that some of the buttons
@@ -190,6 +226,7 @@ String character_generator(){
 
 void idled_screen(){
 	main_interface_start = false;
+	on_main_screen = false;
 	clear_screen();
 	textSize(intro_text_size);
 	fill(0, alphaValue);
@@ -203,6 +240,17 @@ void idled_screen(){
 			reset();
 		}
 	}
+}
+
+void ending_screen(){
+	main_interface_start = false;
+	on_main_screen = false;
+	alphaValue = 255;
+	clear_screen();
+	textSize(intro_text_size);
+	fill(0,alphaValue);
+	textAlign(CENTER);
+	text("THIS IS THE END PLACEHOLDER",width/2,height/2);
 }
 
 void welcome_text(){
@@ -403,7 +451,6 @@ void please_vote_responsibly(){
 	}
 }
 //Intro display functions end\\
-
 
 //The following functions generate the character information\\
 String race_determiner(float race_probability){
@@ -691,6 +738,13 @@ void reset(){
 	background(255);
 	message = character_generator();
 	alphaValue = 0;
+	vote_count = 0;
+	choice_1_picked = false;
+	choice_2_picked = false;
+	choice_3_picked = false;
+	choice_4_picked = false;
+	choice_5_picked = false;
+ 	choice_6_picked = false;
 	name_displayed =false;
 	name_done = false;
 	race_sex_displayed = false;
@@ -715,9 +769,11 @@ void reset(){
 
 //Displays prompts, takes the prompt number as a parameter
 void vote_yesno_display(int choice_number){
+	last_voted_choice = choice_number;
 	for (int i=0; i<6;i++){		main_menu_buttons[i].hide();}
 	for (int i=0; i<2;i++){		voting_buttons[i].show();}
 								voting_prompts[choice_number].show();
+								on_main_screen = false;
 }
 
 // These control what happens when you choose each individual voting option
@@ -757,6 +813,24 @@ void choice6(){
 //In doing this I can determine whether your demographic throws an error by if-else statements
 void voting_button_yes(){
 	if(loaded==true){
+		if (clicked_button == "choice1"){
+			choice_1_picked = true;
+		}
+		if (clicked_button == "choice2"){
+			choice_2_picked = true;
+		}
+		if (clicked_button == "choice3"){
+			choice_3_picked = true;
+		}
+		if (clicked_button == "choice4"){
+			choice_4_picked = true;
+		}
+		if (clicked_button == "choice5"){
+			choice_5_picked = true;
+		}
+		if (clicked_button == "choice6"){
+			choice_6_picked = true;
+		}
 		voting_sequence_stopped = false;
 		thank_you_msg();
 		voting_sequence.start();
@@ -766,6 +840,24 @@ void voting_button_yes(){
 
 void voting_button_no(){
 	if(loaded==true){
+		if (clicked_button == "choice1"){
+			choice_1_picked = true;
+		}
+		if (clicked_button == "choice2"){
+			choice_2_picked = true;
+		}
+		if (clicked_button == "choice3"){
+			choice_3_picked = true;
+		}
+		if (clicked_button == "choice4"){
+			choice_4_picked = true;
+		}
+		if (clicked_button == "choice5"){
+			choice_5_picked = true;
+		}
+		if (clicked_button == "choice6"){
+			choice_6_picked = true;
+		}
 		if(clicked_button=="choice3"){
 			voted_no_error = true;
 		}else{
@@ -781,29 +873,32 @@ void voting_button_no(){
 void thank_you_msg(){
 	imageMode(CENTER);
 	image(thank_you_msg,width/2,height/2,animation_x,animation_y);
+	on_main_screen = false;
 	for (int i=0; i<2;i++){		voting_buttons[i].hide();}
 	for (int i=0; i<6;i++){		voting_prompts[i].hide();}
 }
 
 // draws the error message
 void error_message(){
-	if (timer_last < 300){
+	if (error_timer < 300){
 		song.mute();
 		clear_screen();
 		imageMode(CENTER);
 		image(error_msg,width/2,height/2);
 		for (int i=0; i<2;i++){		voting_buttons[i].hide();}
 		for (int i=0; i<6;i++){		voting_prompts[i].hide();}
+		error_timer += 1;
 	}else{
 		voted_no_error = false;
 		voted_yes_error = false;
-		timer_last = 0;
+		vote_count += 1;
+		error_timer = 0;
 		for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
 		for (int i=0; i<2;i++){		voting_buttons[i].hide();}
 		for (int i=0; i<6;i++){		voting_prompts[i].hide();}
 									reset_button.show();
+									on_main_screen = true;
 	}
-
 }
 
 //so far, clear_screen() only really has to be used once, at the beginning of the introduction but I am still determining the order in which to present
@@ -832,13 +927,13 @@ void draw_screen(){
 //Time out after a minute of inactivity(idleness)
 void check_if_idle(){
 	if (mouseX == pmouseX && mouseY == pmouseY){
-		timer_last += 1;
-		if(timer_last == 3600){
+		idle_timer += 1;
+		if(idle_timer == 3600){
 			begin_button.show();
 			alphaValue = 255;
 			idle = true;
 		}
 	}else{
-		timer_last = 0;
+		idle_timer = 0;
 	}
 }

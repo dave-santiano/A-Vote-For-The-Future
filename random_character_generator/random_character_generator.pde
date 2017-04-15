@@ -13,8 +13,11 @@ int page, idNumber, timer;
 int choice_width = 400;
 int choice_height = 100;
 int alphaValue = 0;
-int ticker_posx = width;
-int ticker_posy = height-100;
+int ticker_posx;
+int ticker_posy;
+int timer_last = 0;
+int intro_text_size = 50;
+int m =0;
 double fade_speed = 60;
 boolean loaded = false, empty_string_made = false, name_displayed =false, name_done = false, race_sex_displayed = false, race_sex_done = false, district_birthday_displayed = false, district_birthday_done = false, please_vote_responsibly_displayed = false, please_vote_responsibly_done = false, intro_done = false, main_interface_start = false, welcome_text_displayed = false, welcome_text_done = false;
 boolean voted_yes = false, voted_no = false;
@@ -34,6 +37,8 @@ float sex_probability, race_probability, class_probability, district_probability
 boolean printed = false;
 
 void setup(){
+	ticker_posx=width+int(textWidth(ticker_message));
+	ticker_posy=height-50;
 	// myPort = new Serial(this, "COM19", 9600);
 	fullScreen(2);
 	vote_cursor = loadImage("cursor.png");
@@ -65,26 +70,45 @@ void draw(){
 	else if(please_vote_responsibly_done == false){please_vote_responsibly();}
 	else if(intro_done == true){voting_interface(); main_interface_start = true;}
 	if (main_interface_start == true){
+			check_if_idle();
+			/////////////////////////////////////// Constant UI header
 			background(255);
 			textSize(50);
 			fill(0,40,104);
 			textAlign(CENTER);
-			text("Welcome to Patriotopia Voting Terminal #689201, ", width/2-textWidth(name)/2,75);
+			text("Welcome to Patriotopia Voting Terminal #689201, ", width/2-textWidth(name)/2,100);
 			fill(224,22,43);
-			text(name, width/2 + textWidth("Welcome to Patriotopia Voting Terminal #689201, ")/2,75);
+			text(name, width/2 + textWidth("Welcome to Patriotopia Voting Terminal #689201, ")/2,100);
 			textSize(20);
-			text("Not " + name + "?" +" Click here:", width/2 - 75,150);
-			stroke(0);
+			text("Not " + name + "?" +" Click here:", 120,35);
+			noStroke();
+			rect(0,height-90,width,50);
+			///////////////////////////////////////
 
-			// These lines are here for formatting purposes
-			line(width/4,0,width/4,height);
-			line((width/4)*2,0,(width/4)*2,height);
-			line((width/4)*3,0,(width/4)*3,height);
-			line(0, height/2, width, height/2);
+			/////////////////////////////////////// These lines are here for formatting purposes
+			// stroke(0);
+			// line(width/4,0,width/4,height);
+			// line((width/4)*2,0,(width/4)*2,height);
+			// line((width/4)*3,0,(width/4)*3,height);
+			// line(0, height/2, width, height/2);
+			///////////////////////////////////////
+
+
+			/////////////////////////////////////// News ticker stuff
+			textSize(32);
+			fill(255);
 			text(ticker_message, ticker_posx, ticker_posy);
-			ticker_posx -= 1;
-			if (ticker_posx == -int(textWidth(ticker_message))){
-				ticker_posx = width + 100;
+			ticker_posx -= 3;
+			noStroke();
+			fill(0,40,104);
+			rect(0,height-90,300,50);
+			fill(255);
+			textAlign(LEFT);
+			textSize(36);
+			text("T.JEFFERSON NEWS",10,height-55);
+			if (ticker_posx < -int(textWidth(ticker_message))){
+				ticker_posx = width+int(textWidth(ticker_message));
+			///////////////////////////////////////
 		}
 		if (voted_yes == true){
 			thank_you_msg();
@@ -94,6 +118,20 @@ void draw(){
 		}
 	}
 }
+
+void check_if_idle(){
+	if (mouseX == pmouseX && mouseY == pmouseY){
+		timer_last += 1;
+		//Time out after a minute of inactivity(idleness)
+		if(timer_last == 3600){
+			reset();
+		}
+	}else{
+		timer_last = 0;
+	}
+}
+
+
 
 String character_generator(){
 	sex_probability = random(0,1);
@@ -117,7 +155,7 @@ void welcome_text(){
 	if(welcome_text_displayed == false && alphaValue<255){
 		alphaValue += fade_speed;
 		clear_screen();
-		textSize(40);
+		textSize(intro_text_size);
 		fill(0,alphaValue);
 		textAlign(CENTER);
 		text("Welcome to", width/2-textWidth(" Patriotopia Voting Terminal #689201")/2,height/2);
@@ -129,7 +167,7 @@ void welcome_text(){
 		welcome_text_displayed = true;
 		alphaValue -= fade_speed;
 		clear_screen();
-		textSize(40);
+		textSize(intro_text_size);
 		fill(0,alphaValue);
 		textAlign(CENTER);
 		text("Welcome to", width/2-textWidth(" Patriotopia Voting Terminal #689201")/2,height/2);
@@ -150,7 +188,7 @@ void name_display(String name){
 	if(name_displayed == false && alphaValue<255){
 		alphaValue+=fade_speed;
 		clear_screen();
-		textSize(40);
+		textSize(intro_text_size);
 		fill(0,alphaValue);
 		textAlign(CENTER);
 		text("Our records show you are ",width/2 - textWidth(name)/2,height/2);
@@ -163,7 +201,7 @@ void name_display(String name){
 		name_displayed = true;
 		alphaValue-=fade_speed;
 		clear_screen();
-		textSize(40);
+		textSize(intro_text_size);
 		fill(0,alphaValue);
 		textAlign(CENTER);
 		text("Our records show you are ",width/2 - textWidth(name)/2,height/2);
@@ -184,7 +222,7 @@ void race_sex_display(String race, String sex){
 	if(race_sex_displayed == false && alphaValue<255){
 		alphaValue+=fade_speed;
 		clear_screen();
-		textSize(40);
+		textSize(intro_text_size);
 		fill(0,alphaValue);
 		textAlign(CENTER);
 		//gotta be grammatically correct here
@@ -205,7 +243,7 @@ void race_sex_display(String race, String sex){
 		race_sex_displayed = true;
 		alphaValue-=fade_speed;
 		clear_screen();
-		textSize(40);
+		textSize(intro_text_size);
 		fill(0,alphaValue);
 		textAlign(CENTER);
 		if(race == "Asian" || race == "American Indian or Alaska Native"){
@@ -233,7 +271,7 @@ void district_birthday_display(String district, String birthday){
 	if(district_birthday_displayed == false && alphaValue<255){
 		alphaValue+=fade_speed;
 		clear_screen();
-		textSize(40);
+		textSize(intro_text_size);
 		fill(0,alphaValue);
 		textAlign(CENTER);
 		text("Born in ",width/2 - textWidth(district + " on " + birthday + " to the " + social_class + " class")/2,height/2);
@@ -259,7 +297,7 @@ void district_birthday_display(String district, String birthday){
 		district_birthday_displayed = true;
 		alphaValue-=fade_speed;
 		clear_screen();
-		textSize(40);
+		textSize(intro_text_size);
 		fill(0,alphaValue);
 		textAlign(CENTER);
 		text("Born in ",width/2 - textWidth(district + " on " + birthday + " to the " + social_class + " class")/2,height/2);
@@ -290,7 +328,7 @@ void please_vote_responsibly(){
 	if(please_vote_responsibly_displayed == false && alphaValue<255){
 		alphaValue += fade_speed;
 		clear_screen();
-		textSize(40);
+		textSize(intro_text_size);
 		fill(0,alphaValue);
 		textAlign(CENTER);
 		text("Please vote responsibly.", width/2,height/2);
@@ -298,7 +336,7 @@ void please_vote_responsibly(){
 		please_vote_responsibly_displayed = true;
 		alphaValue -= fade_speed;
 		clear_screen();
-		textSize(40);
+		textSize(intro_text_size);
 		fill(0,alphaValue);
 		textAlign(CENTER);
 		text("Please vote responsibly.", width/2,height/2);
@@ -310,7 +348,6 @@ void please_vote_responsibly(){
 		}
 	}
 }
-
 //Changed demographics to Pew demographic projections in 2050
 String race_determiner(float race_probability){
 	if (race_probability <= .47){
@@ -455,7 +492,7 @@ void controlEvent(ControlEvent theEvent){
 
 void voting_interface(){
 	main_menu_buttons[0] = cp5.addButton("choice1")
-	.setPosition(width/4, height/4)
+	.setPosition(width/4-100, height/4-50)
 	.setCaptionLabel("IMMIGRATION")
 	.setSize(choice_width,choice_height)
 	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
@@ -463,7 +500,7 @@ void voting_interface(){
 	.updateSize();
 
 	main_menu_buttons[1] = cp5.addButton("choice2")
-	.setPosition(width/4,(height/4)*2)
+	.setPosition(width/4-100,(height/4)*2-50)
 	.setCaptionLabel("ECONOMICS")
 	.setSize(choice_width,choice_height)
 	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
@@ -471,7 +508,7 @@ void voting_interface(){
 	.updateSize();
 
 	main_menu_buttons[2] = cp5.addButton("choice3")
-	.setPosition(width/4,(height/4)*3)
+	.setPosition(width/4-100,(height/4)*3-50)
 	.setCaptionLabel("PATRIOTISM")
 	.setSize(choice_width,choice_height)
 	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
@@ -479,7 +516,7 @@ void voting_interface(){
 	.updateSize();
 
 	main_menu_buttons[3] = cp5.addButton("choice4")
-	.setPosition((width/4)*3 - choice_width,height/4)
+	.setPosition((width/4)*3+100 - choice_width,height/4-50)
 	.setCaptionLabel("ELECTED POSITIONS")
 	.setSize(choice_width,choice_height)
 	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
@@ -487,7 +524,7 @@ void voting_interface(){
 	.updateSize();
 
 	main_menu_buttons[4] = cp5.addButton("choice5")
-	.setPosition((width/4)*3 - choice_width,(height/4)*2)
+	.setPosition((width/4)*3+100 - choice_width,(height/4)*2-50)
 	.setCaptionLabel("EDUCATION")
 	.setSize(choice_width,choice_height)
 	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
@@ -495,7 +532,7 @@ void voting_interface(){
 	.updateSize();
 
 	main_menu_buttons[5] = cp5.addButton("choice6")
-	.setPosition((width/4)*3 - choice_width,(height/4)*3)
+	.setPosition((width/4)*3+100 - choice_width,(height/4)*3-50)
 	.setCaptionLabel("TERRORISM")
 	.setSize(choice_width,choice_height)
 	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
@@ -504,67 +541,81 @@ void voting_interface(){
 
 	voting_prompts[0] = cp5.addTextarea("voting_prompt1")
 	.setText("The recent ban on immigration into the city has been proven effective. The Department of City Safety and Security advises to continue the ban. Please vote.")
-	.setPosition(width/2-400, 300)
-	.setSize(900,200)
+	.setPosition(width/2-480, 300)
+	.setSize(960,200)
 	.setColorValue(0x00000000)
-	.setFont(createFont("ProggySquareTT", 26))
+	.setFont(createFont("ProggySquareTT", 40))
+	.hideScrollbar()
 	.hide();
 
 	voting_prompts[1] = cp5.addTextarea("voting_prompt2")
-	.setText("Recent studies by government economists say that a new commercial zone\nin District 4 would lead to increased economic growth.\nPlease vote.")
-	.setPosition(width/2-400, 300)
+	.setText("Recent studies by government economists say that a new commercial zone in District 4 would lead to increased economic growth.\nPlease vote.")
+	.setPosition(width/2-480, 300)
+	.setSize(960,200)
 	.setColorValue(0x00000000)
-	.setFont(createFont("ProggySquareTT", 26))
+	.setFont(createFont("ProggySquareTT", 40))
+	.hideScrollbar()
 	.hide();
 
 	voting_prompts[2] = cp5.addTextarea("voting_prompt3")
-	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have\never had the opportunity to live in?")
-	.setPosition(width/2-400, 300)
+	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have ever had the opportunity to live in?")
+	.setPosition(width/2-480, 300)
+	.setSize(960,200)
 	.setColorValue(0x00000000)
-	.setFont(createFont("ProggySquareTT", 26))
+	.setFont(createFont("ProggySquareTT", 40))
+	.hideScrollbar()
 	.hide();
 
 	voting_prompts[3] = cp5.addTextarea("voting_prompt4")
-	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have\never had the opportunity to live in?")
-	.setPosition(width/2-400, 300)
+	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have ever had the opportunity to live in?")
+	.setPosition(width/2-480, 300)
+	.setSize(960,200)
 	.setColorValue(0x00000000)
-	.setFont(createFont("ProggySquareTT", 26))
+	.setFont(createFont("ProggySquareTT", 40))
+	.hideScrollbar()
 	.hide();
 
 	voting_prompts[4] = cp5.addTextarea("voting_prompt5")
-	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have\never had the opportunity to live in?")
-	.setPosition(width/2-400, 300)
+	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have ever had the opportunity to live in?")
+	.setPosition(width/2-480, 300)
+	.setSize(960,200)
 	.setColorValue(0x00000000)
-	.setFont(createFont("ProggySquareTT", 26))
+	.setFont(createFont("ProggySquareTT", 40))
+	.hideScrollbar()
 	.hide();
 
 	voting_prompts[5] = cp5.addTextarea("voting_prompt6")
-	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have\never had the opportunity to live in?")
-	.setPosition(width/2-400, 300)
+	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have ever had the opportunity to live in?")
+	.setPosition(width/2-480, 300)
+	.setSize(960,200)
 	.setColorValue(0x00000000)
-	.setFont(createFont("ProggySquareTT", 26))
+	.setFont(createFont("ProggySquareTT", 40))
+	.hideScrollbar()
 	.hide();
 
 	voting_buttons[0] = cp5.addButton("voting_button_yes")
-	.setPosition(width/2 -400, 500)
-	.setSize(150,100)
+	.setPosition(width/2 -480, 600)
+	.setImages(loadImage("yes_button.png"),loadImage("yes_button.png"),loadImage("yes_button.png"))
+	.setSize(250,175)
 	.setCaptionLabel("YES")
 	.hide();
 
 	voting_buttons[1] = cp5.addButton("voting_button_no")
-	.setPosition(width/2 +250, 500)
-	.setSize(150,100)
+	.setPosition(width/2 + 230, 600)
+	.setImages(loadImage("no_button.png"),loadImage("no_button.png"),loadImage("no_button.png"))
+	.setSize(250,175)
 	.setCaptionLabel("NO")
 	.hide();
 
 	back_button = cp5.addButton("back")
-	.setPosition(width-150, height-50)
+	.setPosition(width-150, 200)
 	.setSize(100,25)
 	.hide();
 
 	reset_button = cp5.addButton("reset")
-	.setPosition(width/2+50, 130)
-	.setSize(100,30);
+	.setPosition(80, 45)
+	.setImages(loadImage("reset_button_test.png"),loadImage("reset_button_test.png"),loadImage("reset_button_test.png"))
+	.setSize(60,20);
 
 	intro_done = false;
 }

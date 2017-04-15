@@ -5,6 +5,7 @@ import ddf.minim.*;
 
 Minim minim;
 AudioPlayer song;
+AniSequence voting_sequence;
 // GUI variables
 ControlP5 cp5;
 PImage error_msg, thank_you_msg, vote_cursor;
@@ -17,15 +18,20 @@ int ticker_posx;
 int ticker_posy;
 int timer_last = 0;
 int intro_text_size = 50;
-int m =0;
-double fade_speed = 60;
-boolean loaded = false, empty_string_made = false, name_displayed =false, name_done = false, race_sex_displayed = false, race_sex_done = false, district_birthday_displayed = false, district_birthday_done = false, please_vote_responsibly_displayed = false, please_vote_responsibly_done = false, intro_done = false, main_interface_start = false, welcome_text_displayed = false, welcome_text_done = false;
-boolean voted_yes = false, voted_no = false;
-String ticker_message = "District 6 residents are encountering increased incidents of theft.";
+double fade_speed = 60; //determines overall fade-in and fade-out speed
+float animation_x = 0, animation_y = 0;
+//these booleans display whether the different elements of the introduction are done or not.
+boolean loaded = false, name_displayed =false, name_done = false, race_sex_displayed = false, race_sex_done = false, district_birthday_displayed = false, district_birthday_done = false, please_vote_responsibly_displayed = false, please_vote_responsibly_done = false, intro_done = false, main_interface_start = false, welcome_text_displayed = false, welcome_text_done = false;
+//
+boolean voted_yes = false, voted_no = false; //voted yes and voted no are for drawing the thank you message in the draw loop
+String ticker_message = "District 6 residents are encountering increased incidents of theft."; //message for the news ticker
+
+//Arrays for holding the various menu items
 Button[] main_menu_buttons = new Button[6];
 Button[] voting_buttons = new Button[2];
 Textarea[] voting_prompts = new Textarea[6];
 Button back_button , reset_button;
+//
 
 //clicked button handles the last clicked button
 String male_first_names[],female_first_names[],name, clicked_button;
@@ -34,41 +40,60 @@ String empty_string = "";
 Serial myPort;
 String sex, race, social_class, birthday, id, message, district;
 float sex_probability, race_probability, class_probability, district_probability;
-boolean printed = false;
 
 void setup(){
+	//ticker position has to be set here since the width and height system
+	//variables don't get instantiated until processing calls the setup function.
 	ticker_posx=width+int(textWidth(ticker_message));
 	ticker_posy=height-50;
 	// myPort = new Serial(this, "COM19", 9600);
-	fullScreen(2);
-	vote_cursor = loadImage("cursor.png");
-	cursor(vote_cursor,0,0);
-	// size(1280,720);
-	proggy = createFont("ProggySquareTT", 32);
+	fullScreen(1);
+	vote_cursor = loadImage("cursor.png"); // load custom cursor
+	cursor(vote_cursor,0,0); //(image, clickcoordinatex, clickcoordinatey)
+	voting_sequence = new AniSequence(this); //start a new animation sequence
+	proggy = createFont("ProggySquareTT", 32); ///load the font
 	textFont(proggy);
-	error_msg = loadImage("error_msg.png");
+	error_msg = loadImage("error_msg.png"); //load error and thank you messages
 	thank_you_msg = loadImage("thank_you_msg.png");
-	noStroke();
-	cp5 = new ControlP5(this);
+	cp5 = new ControlP5(this); //load the GUI library
 	minim = new Minim(this);
-	song = minim.loadFile("patriot.mp3");
+	song = minim.loadFile("patriot.mp3"); //load background music and loop a ton of times.
 	// song.loop(1000);
 	voting_interface();
-	loaded = true;
+	loaded = true; //loaded makes sure that all the voting interface elements are loaded.
+				   //This is so that there aren't any clashes with any of the variables
+				   //that the voting interface uses.
 	Ani.init(this);
-	message = character_generator();
-	println(message);
+
+	message = character_generator(); //message with character data for receipt printer
+	/////////////////////////////////////// Animation sequences
+	animation_sequence_instantiator();
+	///////////////////////////////////////
 	// myPort.write(message);
 }
 
+boolean voting_sequence_stopped = false;
+
 void draw(){
-	// The beginning of the draw loop should have the different introductory sentences, an if statement should cover whether they are drawn or not.
+	if(voting_sequence.isEnded() == true && voting_sequence_stopped == false){
+			for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
+			for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+			for (int i=0; i<6;i++){		voting_prompts[i].hide();}
+										back_button.hide();
+			song.unmute();
+			voted_yes = false; //set these two to false to stop rendering the messages
+			voted_no = false;
+			voting_sequence_stopped = true;
+	}
+	// The beginning of the draw loop has the different introductory sentences, an if statement should cover whether they are drawn or not.
 	if (welcome_text_done == false){welcome_text();}
 	else if(name_done == false){name_display(name);}
 	else if(race_sex_done == false){race_sex_display(race, sex);}
 	else if(district_birthday_done == false){district_birthday_display(district, birthday);}
 	else if(please_vote_responsibly_done == false){please_vote_responsibly();}
 	else if(intro_done == true){voting_interface(); main_interface_start = true;}
+	//introduction display end\\
+
 	if (main_interface_start == true){
 			check_if_idle();
 			/////////////////////////////////////// Constant UI header
@@ -110,29 +135,34 @@ void draw(){
 				ticker_posx = width+int(textWidth(ticker_message));
 			///////////////////////////////////////
 		}
+		///////////////////////////////////////Right now these booleans help draw the thank you message continuously, but I'm still finding a 										 way to remove them
 		if (voted_yes == true){
 			thank_you_msg();
 		}
 		if (voted_no == true){
 			thank_you_msg();
 		}
+		///////////////////////////////////////
 	}
 }
 
-void check_if_idle(){
-	if (mouseX == pmouseX && mouseY == pmouseY){
-		timer_last += 1;
-		//Time out after a minute of inactivity(idleness)
-		if(timer_last == 3600){
-			reset();
-		}
-	}else{
-		timer_last = 0;
-	}
+//instantiate the animation sequences that some of the buttons
+void animation_sequence_instantiator(){
+	voting_sequence.beginSequence();
+	voting_sequence.beginStep();
+	voting_sequence.add(Ani.to(this, 1.0, "animation_x", 1000, Ani.BACK_OUT));
+	voting_sequence.add(Ani.to(this, 1.0, "animation_y", 300, Ani.BACK_OUT));
+	voting_sequence.endStep();
+	voting_sequence.beginStep();
+	voting_sequence.add(Ani.to(this, .50, 2, "animation_x", 0, Ani.QUAD_OUT));
+	voting_sequence.add(Ani.to(this, .50, 2, "animation_y", 0, Ani.QUAD_OUT));
+	voting_sequence.endStep();
+	voting_sequence.endSequence();
 }
 
-
-
+//This just calls all the character generation functions and gathers the
+//return values from them, and places them into a string called message.
+//message gets written serially to the receipt printer.
 String character_generator(){
 	sex_probability = random(0,1);
 	race_probability = random(0,1);
@@ -150,6 +180,7 @@ String character_generator(){
 	return message;
 }
 
+//These functions handle the display of the intro.\\
 //Welcome to the voting terminal!
 void welcome_text(){
 	if(welcome_text_displayed == false && alphaValue<255){
@@ -348,7 +379,10 @@ void please_vote_responsibly(){
 		}
 	}
 }
-//Changed demographics to Pew demographic projections in 2050
+//Intro display functions end\\
+
+
+//The following functions generate the character information\\
 String race_determiner(float race_probability){
 	if (race_probability <= .47){
 		String white = "White";
@@ -484,12 +518,15 @@ String birthday_generator(){
 		return "";
 	}
 }
+//character generation functions end\\
 
+//stores the latest pressed button into a variable called clicked_button
 void controlEvent(ControlEvent theEvent){
 	println(theEvent.getController().getName());
 	clicked_button = theEvent.getController().getName();
 }
 
+//populates the voting interface buttons and text on the screen, and also places them into respective arrays.
 void voting_interface(){
 	main_menu_buttons[0] = cp5.addButton("choice1")
 	.setPosition(width/4-100, height/4-50)
@@ -620,10 +657,10 @@ void voting_interface(){
 	intro_done = false;
 }
 
+//resets everything, sets everything back to false
 void reset(){
 	background(255);
 	message = character_generator();
-	empty_string_made = false;
 	name_displayed =false;
 	name_done = false;
 	race_sex_displayed = false;
@@ -640,22 +677,7 @@ void reset(){
 	println(message);
 }
 
-void error_message(){
-	song.mute();
-	imageMode(CENTER);
-	image(error_msg,width/2,height/2);
-	for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-	for (int i=0; i<6;i++){		voting_prompts[i].hide();}
-								back_button.show();
-}
 
-void thank_you_msg(){
-	imageMode(CENTER);
-	image(thank_you_msg,width/2,height/2);
-	for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-	for (int i=0; i<6;i++){		voting_prompts[i].hide();}
-								back_button.show();
-}
 
 //Displays prompts, takes the prompt number as a parameter
 void vote_yesno_display(int choice_number){
@@ -696,36 +718,66 @@ void choice6(){
 		vote_yesno_display(5);
 	}
 }
+//voting choices functions end\\
 
 //So right now I am designing the interface to throw an error whenever you press yes or no, rather than at subject choice.
 //In doing this I can determine whether your demographic throws an error by if-else statements
 void voting_button_yes(){
 	if(loaded==true){
+		voting_sequence_stopped = false;
 		thank_you_msg();
+		voting_sequence.start();
 		voted_yes = true;
 	}
 }
+
 void voting_button_no(){
 	if(loaded==true){
 		if(clicked_button=="choice3"){
 			error_message();
 		}else{
+			voting_sequence_stopped = false;
+			thank_you_msg();
+			voting_sequence.start();
 			voted_no = true;
 		}
 	}
 }
-void back(){
-	if(loaded==true){
-			for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
-			for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-			for (int i=0; i<6;i++){		voting_prompts[i].hide();}
-										back_button.hide();
-		song.unmute();
-		voted_yes = false;
-		voted_no = false;
-		// placed here because it will unmute the song in the case that it is muted by an error message.
-		}
+
+// draws the thank you message
+void thank_you_msg(){
+	imageMode(CENTER);
+	image(thank_you_msg,width/2,height/2,animation_x,animation_y);
+	for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+	for (int i=0; i<6;i++){		voting_prompts[i].hide();}
+								back_button.show();
 }
+
+// draws the error message
+void error_message(){
+	song.mute();
+	imageMode(CENTER);
+	image(error_msg,width/2,height/2);
+	for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+	for (int i=0; i<6;i++){		voting_prompts[i].hide();}
+								back_button.show();
+}
+
+
+
+//back button, just to return to the main menu, right now I'm trying to phase it out.
+// void back(){
+// 	if(loaded==true){
+// 			for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
+// 			for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+// 			for (int i=0; i<6;i++){		voting_prompts[i].hide();}
+// 										back_button.hide();
+// 		song.unmute();
+// 		voted_yes = false;
+// 		voted_no = false;
+// 		// placed here because it will unmute the song in the case that it is muted by an error message.
+// 	}
+// }
 
 //so far, clear_screen() only really has to be used once, at the beginning of the introduction but I am still determining the order in which to present
 //the user information so I will clean it up later.
@@ -749,4 +801,16 @@ void draw_screen(){
 			for (int i=0;i<3;i++){ 		voting_prompts[i].hide();}
 										back_button.hide();
 		}
+}
+
+//Time out after a minute of inactivity(idleness)
+void check_if_idle(){
+	if (mouseX == pmouseX && mouseY == pmouseY){
+		timer_last += 1;
+		if(timer_last == 3600){
+			reset();
+		}
+	}else{
+		timer_last = 0;
+	}
 }

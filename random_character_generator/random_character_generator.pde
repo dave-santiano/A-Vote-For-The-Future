@@ -14,8 +14,10 @@ int page, idNumber, timer;
 int choice_width = 400;
 int choice_height = 100;
 int alphaValue = 255;
-int ticker_posx;
-int ticker_posy;
+int ticker_1_posx;
+int ticker_1_posy;
+int ticker_2_posx;
+int ticker_2_posy;
 int idle_timer = 0;
 int error_timer = 0;
 int intro_text_size = 50;
@@ -25,10 +27,14 @@ float animation_x = 0, animation_y = 0;
 boolean loaded = false, name_displayed =false, name_done = false, race_sex_displayed = false, race_sex_done = false, district_birthday_displayed = false, district_birthday_done = false, please_vote_responsibly_displayed = false, please_vote_responsibly_done = false, intro_done = false, main_interface_start = false, welcome_text_displayed = false, welcome_text_done = false;
 //
 boolean voted_yes_thanks = false, voted_no_thanks = false, voted_yes_error = false, voted_no_error = false; //voted yes and voted no are for drawing the thank you message in the draw loop
-String ticker_message = "District 6 residents are encountering increased incidents of theft."; //message for the news ticker
+String ticker_message_part_1 = "District 6 residents are reporting increased incidents of theft in its Economic Recovery Zone, please be aware of your belongings. The new Recreational Zone of District 3 boasts a new sports complex. Riots from minority groups in District 4 destroy local playground. "; //message for the news ticker
+String ticker_message_part_2 = "District 2's new 40 mile water front boasts ten new shopping malls and two pools that look like beaches. District 1's new Patriot Wall successfully containing riots from District 4. ";
 
+//determines which button has been picked
 boolean choice_1_picked = false, choice_2_picked = false, choice_3_picked = false, choice_4_picked = false, choice_5_picked = false, choice_6_picked = false;
-boolean on_main_screen = false;
+
+boolean on_main_screen = false;//checks to see if on the main screen of the voting terminal, this is used to mainly render out the checkmarks, but it can be used to render out any elements that you just want on the main screen.
+
 //Arrays for holding the various menu items
 Button[] main_menu_buttons = new Button[6];
 Button[] voting_buttons = new Button[2];
@@ -50,8 +56,6 @@ boolean idle = true, begin = false, ended = false;
 void setup(){
 	//ticker position has to be set here since the width and height system
 	//variables don't get instantiated until processing calls the setup function.
-	ticker_posx=width+int(textWidth(ticker_message));
-	ticker_posy=height-50;
 	// myPort = new Serial(this, "COM19", 9600);
 	fullScreen(1);
 	vote_cursor = loadImage("cursor.png"); // load custom cursor
@@ -66,22 +70,28 @@ void setup(){
 	minim = new Minim(this);
 	song = minim.loadFile("patriot.mp3"); //load background music and loop a ton of times.
 	// song.loop(1000);
-	idle = true;
+	message = character_generator(); //message with character data for receipt printer
 	voting_interface();
 	loaded = true; //loaded makes sure that all the voting interface elements are loaded.
 				   //This is so that there aren't any clashes with any of the variables
 				   //that the voting interface uses.
 	Ani.init(this);
-	message = character_generator(); //message with character data for receipt printer
 	/////////////////////////////////////// Animation sequences
 	animation_sequence_instantiator();
 	///////////////////////////////////////
+	//You have to measure textWidth after loading your font otherwise you will get different
+	//values.
+	ticker_1_posx= 0;
+	ticker_1_posy= height-50;
+	ticker_2_posx= int(textWidth(ticker_message_part_1));
+	ticker_2_posy= height-50;
 	// myPort.write(message);
 }
 
 void draw(){
+	if(vote_count == 6){ended = true;}
 	// The beginning of the draw loop has the different introductory sentences, an if statement should cover whether they are drawn or not.
-		if (ended == true){ending_screen();}
+	if (ended == true){ending_screen();}
 		else if(idle == true && ended == false){idled_screen();on_main_screen = false;}
 		else if(idle == false && welcome_text_done == false){welcome_text();}
 		else if(name_done == false){name_display(name);}
@@ -90,40 +100,61 @@ void draw(){
 		else if(please_vote_responsibly_done == false){please_vote_responsibly();}
 		else if(intro_done == true){voting_interface();begin_button.hide();main_interface_start = true;	on_main_screen = true;}
 
-	if(vote_count == 6){
-		ended = true;
-	}
 	//introduction display end\\
 	if (main_interface_start == true){
 			check_if_idle();
 			/////////////////////////////////////// Constant UI header
 			background(255);
+			check_mark_drawer();
 			textSize(50);
 			fill(0,40,104);
 			textAlign(CENTER);
 			text("Welcome to Patriotopia Voting Terminal #689201, ", width/2-textWidth(name)/2,100);
 			fill(224,22,43);
 			text(name, width/2 + textWidth("Welcome to Patriotopia Voting Terminal #689201, ")/2,100);
+			if(on_main_screen==true){
+				textSize(40);
+				fill(0,40,104,175);
+				text("Today's voting topics are: ", width/2, 150);
+			}else{
+				textSize(40);
+				fill(0,40,104,175);
+				text("Please vote.", width/2, 150);
+			}
 			textSize(20);
 			text("Not " + name + "?" +" Click here:", 120,35);
+			fill(224,22,43);
 			noStroke();
 			rect(0,height-90,width,50);
 			///////////////////////////////////////
 
 			/////////////////////////////////////// These lines are here for formatting purposes
-			stroke(0);
-			line(width/4,0,width/4,height);
-			line((width/4)*2,0,(width/4)*2,height);
-			line((width/4)*3,0,(width/4)*3,height);
-			line(0, height/2, width, height/2);
+			// stroke(0);
+			// line(width/4,0,width/4,height);
+			// line((width/4)*2,0,(width/4)*2,height);
+			// line((width/4)*3,0,(width/4)*3,height);
+			// line(0, height/2, width, height/2);
 			///////////////////////////////////////
-
 
 			/////////////////////////////////////// News ticker
 			textSize(32);
 			fill(255);
-			text(ticker_message, ticker_posx, ticker_posy);
-			ticker_posx -= 3;
+			textAlign(LEFT);
+			text(ticker_message_part_1, ticker_1_posx, ticker_1_posy);
+			text(ticker_message_part_2, ticker_2_posx, ticker_2_posy);
+			println("TICKER 1 POS" + ticker_1_posx);
+			println("TICKER 2 POS" + ticker_2_posx);
+
+			if (ticker_1_posx < -int(textWidth(ticker_message_part_1))){
+				ticker_1_posx = ticker_2_posx + int(textWidth(ticker_message_part_2));
+			}
+			else if(ticker_1_posx > 0){
+				ticker_2_posx -=3;
+				ticker_1_posx = ticker_2_posx + int(textWidth(ticker_message_part_2));
+			}else{
+				ticker_1_posx -= 3;
+				ticker_2_posx = ticker_1_posx + int(textWidth(ticker_message_part_1));
+			}
 			noStroke();
 			fill(0,40,104);
 			rect(0,height-90,300,50);
@@ -131,14 +162,10 @@ void draw(){
 			textAlign(LEFT);
 			textSize(36);
 			text("T.JEFFERSON NEWS",10,height-55);
-			if (ticker_posx < -int(textWidth(ticker_message))){
-				ticker_posx = width+int(textWidth(ticker_message));
 			///////////////////////////////////////
-			}
-			println(on_main_screen);
-			println(choice_1_picked);
-			check_mark_drawer();
-			//These booleans allow the messages to draw continuously in the draw loop
+
+
+			//These booleans allow the thank you/error messages to draw continuously in the draw loop
 			if (voted_yes_thanks == true){
 				thank_you_msg();
 			}
@@ -165,42 +192,6 @@ void draw(){
 	}
 }
 
-
-void check_mark_drawer(){
-		if(on_main_screen == true && choice_1_picked == true){
-			image(checkmark, width/4-175, height/4, 100,100);
-		}
-		if(on_main_screen == true && choice_2_picked == true){
-			image(checkmark, width/4-175, (height/4)*2, 100,100);
-		}
-		if(on_main_screen == true && choice_3_picked == true){
-			image(checkmark, width/4-175, (height/4)*3, 100,100);
-		}
-		if(on_main_screen == true && choice_4_picked == true){
-			image(checkmark, width/2+100, height/4, 100,100);
-		}
-		if(on_main_screen == true && choice_5_picked == true){
-			image(checkmark, width/2+100, (height/4)*2, 100,100);
-		}
-		if(on_main_screen == true && choice_6_picked == true){
-			image(checkmark, width/2+100, (height/4)*3, 100,100);
-		}
-}
-
-//instantiate the animation sequences that some of the buttons
-void animation_sequence_instantiator(){
-	voting_sequence.beginSequence();
-	voting_sequence.beginStep();
-	voting_sequence.add(Ani.to(this, 1.0, "animation_x", 1000, Ani.BACK_OUT));
-	voting_sequence.add(Ani.to(this, 1.0, "animation_y", 300, Ani.BACK_OUT));
-	voting_sequence.endStep();
-	voting_sequence.beginStep();
-	voting_sequence.add(Ani.to(this, .50, 2, "animation_x", 0, Ani.QUAD_OUT));
-	voting_sequence.add(Ani.to(this, .50, 2, "animation_y", 0, Ani.QUAD_OUT));
-	voting_sequence.endStep();
-	voting_sequence.endSequence();
-}
-
 //This just calls all the character generation functions and gathers the
 //return values from them, and places them into a string called message.
 //message gets written serially to the receipt printer.
@@ -220,10 +211,7 @@ String character_generator(){
 	message = "NAME: "+ name + "\n" + "BIRTHDAY: " + birthday + "\n" + "RACE: " + race + "\n" + "SEX: " + sex + "\n" + id + "\n" + "DISTRICT: " + district + "\n" + "CLASS: " + social_class + "\n" + "|";
 	return message;
 }
-
-//These functions handle the display of the intro.\\
-//Welcome to the voting terminal!
-
+//idled screen also serves as the beginning screen as well
 void idled_screen(){
 	main_interface_start = false;
 	on_main_screen = false;
@@ -242,6 +230,7 @@ void idled_screen(){
 	}
 }
 
+//placeholder ending screen
 void ending_screen(){
 	main_interface_start = false;
 	on_main_screen = false;
@@ -253,6 +242,35 @@ void ending_screen(){
 	text("THIS IS THE END PLACEHOLDER",width/2,height/2);
 }
 
+void check_mark_drawer(){
+		if(on_main_screen == true && choice_1_picked == true){
+			image(checkmark, width/4-175, height/4, 100,100);
+			main_menu_buttons[0].lock();
+		}
+		if(on_main_screen == true && choice_2_picked == true){
+			image(checkmark, width/4-175, (height/4)*2, 100,100);
+			main_menu_buttons[1].lock();
+		}
+		if(on_main_screen == true && choice_3_picked == true){
+			image(checkmark, width/4-175, (height/4)*3, 100,100);
+			main_menu_buttons[2].lock();
+		}
+		if(on_main_screen == true && choice_4_picked == true){
+			image(checkmark, width/2+100, height/4, 100,100);
+			main_menu_buttons[3].lock();
+		}
+		if(on_main_screen == true && choice_5_picked == true){
+			image(checkmark, width/2+100, (height/4)*2, 100,100);
+			main_menu_buttons[4].lock();
+		}
+		if(on_main_screen == true && choice_6_picked == true){
+			image(checkmark, width/2+100, (height/4)*3, 100,100);
+			main_menu_buttons[5].lock();
+
+		}
+}
+//These functions handle the display of the intro.\\
+//Welcome to the voting terminal!
 void welcome_text(){
 	if(welcome_text_displayed == false && alphaValue<255){
 		alphaValue += fade_speed;
@@ -590,12 +608,14 @@ String birthday_generator(){
 }
 //character generation functions end\\
 
+
 //stores the latest pressed button into a variable called clicked_button
 void controlEvent(ControlEvent theEvent){
 	println(theEvent.getController().getName());
 	clicked_button = theEvent.getController().getName();
 }
 
+//begins the voting sequence, whether from idle or from start-up
 void begin_button(){
 	begin_button.hide();
 	begin = true;
@@ -611,49 +631,43 @@ void voting_interface(){
 
 	main_menu_buttons[0] = cp5.addButton("choice1")
 	.setPosition(width/4-100, height/4-50)
-	.setCaptionLabel("IMMIGRATION")
 	.setSize(choice_width,choice_height)
-	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
+	.setImages(loadImage("immigration_button.png"),loadImage("immigration_button_mouseover.png"),loadImage("immigration_button.png"))
 	// (defaultImage, rolloverImage, pressedImage)
 	.updateSize();
 
 	main_menu_buttons[1] = cp5.addButton("choice2")
 	.setPosition(width/4-100,(height/4)*2-50)
-	.setCaptionLabel("ECONOMICS")
 	.setSize(choice_width,choice_height)
-	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
+	.setImages(loadImage("economics_button.png"),loadImage("economics_button_mouseover.png"),loadImage("economics_button.png"))
 	// (defaultImage, rolloverImage, pressedImage)
 	.updateSize();
 
 	main_menu_buttons[2] = cp5.addButton("choice3")
 	.setPosition(width/4-100,(height/4)*3-50)
-	.setCaptionLabel("PATRIOTISM")
 	.setSize(choice_width,choice_height)
-	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
+	.setImages(loadImage("patriotism_button.png"),loadImage("patriotism_button_mouseover.png"),loadImage("choice_button_test.png"))
 	// (defaultImage, rolloverImage, pressedImage)
 	.updateSize();
 
 	main_menu_buttons[3] = cp5.addButton("choice4")
 	.setPosition((width/4)*3+100 - choice_width,height/4-50)
-	.setCaptionLabel("ELECTED POSITIONS")
 	.setSize(choice_width,choice_height)
-	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
+	.setImages(loadImage("elected_button.png"),loadImage("elected_button_mouseover.png"),loadImage("elected_button.png"))
 	// (defaultImage, rolloverImage, pressedImage)
 	.updateSize();
 
 	main_menu_buttons[4] = cp5.addButton("choice5")
 	.setPosition((width/4)*3+100 - choice_width,(height/4)*2-50)
-	.setCaptionLabel("EDUCATION")
 	.setSize(choice_width,choice_height)
-	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
+	.setImages(loadImage("education_button.png"),loadImage("education_button_mouseover.png"),loadImage("education_button.png"))
 	// (defaultImage, rolloverImage, pressedImage)
 	.updateSize();
 
 	main_menu_buttons[5] = cp5.addButton("choice6")
 	.setPosition((width/4)*3+100 - choice_width,(height/4)*3-50)
-	.setCaptionLabel("TERRORISM")
 	.setSize(choice_width,choice_height)
-	.setImages(loadImage("choice_button_test.png"),loadImage("choice_button_test_mouseover.png"),loadImage("choice_button_test.png"))
+	.setImages(loadImage("abortion_button.png"),loadImage("abortion_button_mouseover.png"),loadImage("abortion_button.png"))
 	// (defaultImage, rolloverImage, pressedImage)
 	.updateSize();
 
@@ -694,7 +708,7 @@ void voting_interface(){
 	.hide();
 
 	voting_prompts[4] = cp5.addTextarea("voting_prompt5")
-	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have ever had the opportunity to live in?")
+	.setText("ELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTION")
 	.setPosition(width/2-480, 300)
 	.setSize(960,200)
 	.setColorValue(0x00000000)
@@ -703,7 +717,7 @@ void voting_interface(){
 	.hide();
 
 	voting_prompts[5] = cp5.addTextarea("voting_prompt6")
-	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have ever had the opportunity to live in?")
+	.setText("ABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTION")
 	.setPosition(width/2-480, 300)
 	.setSize(960,200)
 	.setColorValue(0x00000000)
@@ -731,40 +745,6 @@ void voting_interface(){
 	.setSize(60,20);
 
 	intro_done = false;
-}
-
-//resets everything, sets everything back to false
-void reset(){
-	background(255);
-	message = character_generator();
-	alphaValue = 0;
-	vote_count = 0;
-	choice_1_picked = false;
-	choice_2_picked = false;
-	choice_3_picked = false;
-	choice_4_picked = false;
-	choice_5_picked = false;
- 	choice_6_picked = false;
-	name_displayed =false;
-	name_done = false;
-	race_sex_displayed = false;
-	race_sex_done = false;
-	district_birthday_displayed = false;
-	district_birthday_done = false;
-	please_vote_responsibly_displayed = false;
-	please_vote_responsibly_done = false;
-	welcome_text_displayed = false;
-	welcome_text_done = false;
-	intro_done = false;
-	main_interface_start = false;
-	if (idle == true){
-		begin_button.show();
-	}
-	if (idle == false){
-		begin_button.hide();
-	}
-	song.unmute();
-	println(message);
 }
 
 //Displays prompts, takes the prompt number as a parameter
@@ -893,6 +873,7 @@ void error_message(){
 		voted_yes_error = false;
 		vote_count += 1;
 		error_timer = 0;
+		song.unmute();
 		for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
 		for (int i=0; i<2;i++){		voting_buttons[i].hide();}
 		for (int i=0; i<6;i++){		voting_prompts[i].hide();}
@@ -913,7 +894,7 @@ void clear_screen(){
 		}
 }
 
-//draw_screen() is not really used right now lol, but I have a feeling I might have to at some point? Maybe? I'll eliminate it later if it turns out I don't
+//draw_screen() is not really used right now, but I have a feeling I might have to at some point? Maybe? I'll eliminate it later if it turns out I don't
 void draw_screen(){
 	background(255);
 		if(loaded==true){
@@ -936,4 +917,53 @@ void check_if_idle(){
 	}else{
 		idle_timer = 0;
 	}
+}
+
+//resets everything, sets everything back to false
+void reset(){
+	background(255);
+	for (int i=0;i<6;i++){main_menu_buttons[i].unlock();}
+	message = character_generator();
+	alphaValue = 0;
+	vote_count = 0;
+	choice_1_picked = false;
+	choice_2_picked = false;
+	choice_3_picked = false;
+	choice_4_picked = false;
+	choice_5_picked = false;
+ 	choice_6_picked = false;
+	name_displayed =false;
+	name_done = false;
+	race_sex_displayed = false;
+	race_sex_done = false;
+	district_birthday_displayed = false;
+	district_birthday_done = false;
+	please_vote_responsibly_displayed = false;
+	please_vote_responsibly_done = false;
+	welcome_text_displayed = false;
+	welcome_text_done = false;
+	intro_done = false;
+	main_interface_start = false;
+	if (idle == true){
+		begin_button.show();
+	}
+	if (idle == false){
+		begin_button.hide();
+	}
+	song.unmute();
+	println(message);
+}
+
+//instantiate the animation sequences that the thank you messages use
+void animation_sequence_instantiator(){
+	voting_sequence.beginSequence();
+	voting_sequence.beginStep();
+	voting_sequence.add(Ani.to(this, 1.0, "animation_x", 1000, Ani.BACK_OUT));
+	voting_sequence.add(Ani.to(this, 1.0, "animation_y", 300, Ani.BACK_OUT));
+	voting_sequence.endStep();
+	voting_sequence.beginStep();
+	voting_sequence.add(Ani.to(this, .50, 2, "animation_x", 0, Ani.QUAD_OUT));
+	voting_sequence.add(Ani.to(this, .50, 2, "animation_y", 0, Ani.QUAD_OUT));
+	voting_sequence.endStep();
+	voting_sequence.endSequence();
 }

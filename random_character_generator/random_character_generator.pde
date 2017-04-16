@@ -4,7 +4,7 @@ import de.looksgood.ani.*;
 import ddf.minim.*;
 
 Minim minim;
-AudioPlayer song;
+AudioPlayer middle_song, lower_song, upper_song;
 AniSequence voting_sequence;
 // GUI variables
 ControlP5 cp5;
@@ -20,8 +20,9 @@ int ticker_2_posx;
 int ticker_2_posy;
 int idle_timer = 0;
 int error_timer = 0;
+int error_timer_time;
 int intro_text_size = 50;
-float fade_speed = 60; //determines overall fade-in and fade-out speed
+float fade_speed = 2; //determines overall fade-in and fade-out speed
 float animation_x = 0, animation_y = 0;
 //these booleans display whether the different elements of the introduction are done or not.
 boolean loaded = false, name_displayed =false, name_done = false, race_sex_displayed = false, race_sex_done = false, district_birthday_displayed = false, district_birthday_done = false, please_vote_responsibly_displayed = false, please_vote_responsibly_done = false, intro_done = false, main_interface_start = false, welcome_text_displayed = false, welcome_text_done = false;
@@ -53,12 +54,12 @@ String previous_sex,previous_race,previous_social_class,previous_district;
 float sex_probability, race_probability, class_probability, district_probability;
 boolean voting_sequence_stopped = false;
 boolean idle = true, begin = false, ended = false;
-
+boolean end_fade_done = false;
 void setup(){
 	//ticker position has to be set here since the width and height system
 	//variables don't get instantiated until processing calls the setup function.
 	// myPort = new Serial(this, "COM19", 9600);
-	fullScreen(2);
+	fullScreen(1);
 	vote_cursor = loadImage("cursor.png"); // load custom cursor
 	cursor(vote_cursor,0,0); //(image, clickcoordinatex, clickcoordinatey)
 	voting_sequence = new AniSequence(this); //start a new animation sequence
@@ -69,8 +70,10 @@ void setup(){
 	checkmark = loadImage("checkmark.png");
 	cp5 = new ControlP5(this); //load the GUI library
 	minim = new Minim(this);
-	song = minim.loadFile("patriot.mp3"); //load background music and loop a ton of times.
-	// song.loop(1000);
+	lower_song = minim.loadFile("anthem_lower_glitch.mp3");
+	middle_song = minim.loadFile("anthem_middle.mp3");
+	upper_song = minim.loadFile("anthem_upper.mp3");
+	 //load background music and loop a ton of times.
 	message = character_generator(); //message with character data for receipt printer
 	println(message);
 	voting_interface();
@@ -91,7 +94,6 @@ void setup(){
 }
 
 void draw(){
-	if(vote_count == 6){ended = true;}
 	// The beginning of the draw loop has the different introductory sentences, an if statement should cover whether they are drawn or not.
 	if (ended == true){ending_screen();}
 		else if(idle == true && ended == false){idled_screen();on_main_screen = false;}
@@ -100,8 +102,7 @@ void draw(){
 		else if(race_sex_done == false){race_sex_display(race, sex);}
 		else if(district_birthday_done == false){district_birthday_display(district, birthday);}
 		else if(please_vote_responsibly_done == false){please_vote_responsibly();}
-		else if(intro_done == true){voting_interface();begin_button.hide();main_interface_start = true;	on_main_screen = true;}
-
+		else if(intro_done == true){voting_interface();begin_button.hide();main_interface_start = true;	on_main_screen = true;begin =false;}
 	//introduction display end\\
 	if (main_interface_start == true){
 			check_if_idle();
@@ -111,9 +112,9 @@ void draw(){
 			textSize(50);
 			fill(0,40,104);
 			textAlign(CENTER);
-			text("Welcome to Patriotopia Voting Terminal #689201, ", width/2-textWidth(name)/2,100);
+			text("Welcome to Patriotopia Voting Terminal #110817, ", width/2-textWidth(name)/2,100);
 			fill(224,22,43);
-			text(name, width/2 + textWidth("Welcome to Patriotopia Voting Terminal #689201, ")/2,100);
+			text(name, width/2 + textWidth("Welcome to Patriotopia Voting Terminal #110817, ")/2,100);
 			if(on_main_screen==true){
 				textSize(40);
 				fill(0,40,104,175);
@@ -123,11 +124,10 @@ void draw(){
 				fill(0,40,104,175);
 				text("Please vote.", width/2, 150);
 			}
-			textSize(20);
-			text("Not " + name + "?" +" Click here:", 120,35);
-			fill(224,22,43);
-			noStroke();
-			rect(0,height-90,width,50);
+			if(social_class != "Lower"){
+				textSize(20);
+				text("Not " + name + "?" +" Click here:", 120,35);
+			}
 			///////////////////////////////////////
 
 			/////////////////////////////////////// These lines are here for formatting purposes
@@ -139,6 +139,9 @@ void draw(){
 			///////////////////////////////////////
 
 			/////////////////////////////////////// News ticker
+			fill(224,22,43);
+			noStroke();
+			rect(0,height-90,width,50);
 			textSize(32);
 			fill(255);
 			textAlign(LEFT);
@@ -184,25 +187,33 @@ void draw(){
 			if (voted_no_error == true){
 				error_message();
 			}
+
 			if(voting_sequence.isEnded() == true && voting_sequence_stopped == false){
-				for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
-				for (int i=0; i<2;i++){		voting_buttons[i].hide();}
-				for (int i=0; i<6;i++){		voting_prompts[i].hide();}
-				song.unmute();
+				vote_count += 1;
+				if(vote_count == 6){ended = true;}
+				if(ended == false){
+					for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
+					for (int i=0; i<2;i++){		voting_buttons[i].hide();}
+					for (int i=0; i<6;i++){		voting_prompts[i].hide();}
+					all_purpose_unmuter();
+				}
 				voted_yes_thanks = false; //set these two to false to stop rendering the messages
 				voted_no_thanks = false;
 				voting_sequence_stopped = true;
-				vote_count += 1;
 				on_main_screen = true;
 			}
+
 			if(social_class == "Lower"){
 				filter(INVERT);
-				filter(BLUR,1);
+				frameRate(10);
 				fill(255,0,0);
-				textSize(100);
+				textSize(200);
 				textAlign(CENTER);
 				text("MAINTENANCE NEEDED",width/2,height/2-100);
 				for (int i=0;i<6;i++){ voting_prompts[i].setColorValue(0xFFFFFFFF);}
+				reset_button.remove();
+			}else {
+				frameRate(60);
 			}
 	}
 
@@ -246,7 +257,6 @@ String character_generator(){
 	previous_race = race;
 	previous_social_class = social_class;
 	previous_district = district;
-
 	name = name_determiner(sex);
 	birthday = birthday_generator();
 	message = "NAME: "+ name + "\n" + "BIRTHDAY: " + birthday + "\n" + "RACE: " + race + "\n" + "SEX: " + sex + "\n" + id + "\n" + "DISTRICT: " + district + "\n" + "CLASS: " + social_class + "\n" + "|";
@@ -254,6 +264,7 @@ String character_generator(){
 }
 //idled screen also serves as the beginning screen as well
 void idled_screen(){
+	frameRate(60);
 	main_interface_start = false;
 	on_main_screen = false;
 	clear_screen();
@@ -273,16 +284,32 @@ void idled_screen(){
 
 //placeholder ending screen
 void ending_screen(){
+	frameRate(60);
+	all_purpose_muter();
 	main_interface_start = false;
 	on_main_screen = false;
-	alphaValue = 255;
-	clear_screen();
-	textSize(intro_text_size);
-	fill(0,alphaValue);
-	textAlign(CENTER);
-	text("I hope you enjoyed your brief glimpse into the city of Patriotopia.",width/2,height/2);
-	text("If you'd like to vote again under a different identity click here:",width/2,height/2);
-	text("The experience may be different this time.",width/2,height/2);
+	if (end_fade_done == false && alphaValue<255){
+		clear_screen();
+		alphaValue += fade_speed;
+		fill(255,alphaValue);
+		rect(0,0,width,height);
+	}else{
+		end_fade_done = true;
+		alphaValue -= fade_speed;
+		if (alphaValue < 0){
+			alphaValue=0;
+			begin_button.show();
+		}
+		clear_screen();
+		textSize(intro_text_size);
+		fill(0);
+		textAlign(CENTER);
+		text("I hope you enjoyed your brief glimpse into the city of Patriotopia.",width/2,height/2-50);
+		text("If you'd like to vote again under a different identity click here:",width/2,height/2);
+		text("The experience may be different this time.",width/2,height/2+300);
+		fill(255,alphaValue);
+		rect(0,0,width,height);
+	}
 }
 
 void check_mark_drawer(){
@@ -321,11 +348,11 @@ void welcome_text(){
 		textSize(intro_text_size);
 		fill(0,alphaValue);
 		textAlign(CENTER);
-		text("Welcome to", width/2-textWidth(" Patriotopia Voting Terminal #689201")/2,height/2);
+		text("Welcome to", width/2-textWidth(" Patriotopia Voting Terminal #110817")/2,height/2);
 		fill(0,40,104,alphaValue);
-		text(" Patriotopia ", width/2 + textWidth("Welcome to")/2 - textWidth("Voting Terminal #689201")/2,height/2);
+		text(" Patriotopia ", width/2 + textWidth("Welcome to")/2 - textWidth("Voting Terminal #110817")/2,height/2);
 		fill(0, alphaValue);
-		text("Voting Terminal #689201", width/2+textWidth("Welcome to Patriotopia ")/2,height/2);
+		text("Voting Terminal #110817", width/2+textWidth("Welcome to Patriotopia ")/2,height/2);
 	}else{
 		welcome_text_displayed = true;
 		alphaValue -= fade_speed;
@@ -333,11 +360,11 @@ void welcome_text(){
 		textSize(intro_text_size);
 		fill(0,alphaValue);
 		textAlign(CENTER);
-		text("Welcome to", width/2-textWidth(" Patriotopia Voting Terminal #689201")/2,height/2);
+		text("Welcome to", width/2-textWidth(" Patriotopia Voting Terminal #110817")/2,height/2);
 		fill(0,40,104,alphaValue);
-		text(" Patriotopia ", width/2 + textWidth("Welcome to")/2 - textWidth("Voting Terminal #689201")/2,height/2);
+		text(" Patriotopia ", width/2 + textWidth("Welcome to")/2 - textWidth("Voting Terminal #110817")/2,height/2);
 		fill(0, alphaValue);
-		text("Voting Terminal #689201", width/2+textWidth("Welcome to Patriotopia ")/2,height/2);
+		text("Voting Terminal #110817", width/2+textWidth("Welcome to Patriotopia ")/2,height/2);
 		if (alphaValue ==0){
 			welcome_text_done = true;
 			clear_screen();
@@ -454,6 +481,39 @@ void district_birthday_display(String district, String birthday){
 		text('\n' + "in the city of ",width/2 - textWidth("in the city of ")/2, height/2);
 		fill(0,40,104,alphaValue);
 		text('\n' + "Patriotopia.",width/2 + textWidth("Patriotopia.")/2,height/2);
+		if (loaded == true){
+			if (social_class == "Upper"){
+				middle_song.mute();
+				lower_song.mute();
+				middle_song.rewind();
+				lower_song.rewind();
+				upper_song.rewind();
+				lower_song.pause();
+				middle_song.pause();
+				upper_song.loop();
+				println("HITU");
+			}else if(social_class == "Middle"){
+				upper_song.mute();
+				lower_song.mute();
+				lower_song.rewind();
+				upper_song.rewind();
+				middle_song.rewind();
+				upper_song.pause();
+				lower_song.pause();
+				middle_song.loop();
+				println("HITM");
+			}else if(social_class == "Lower"){
+				upper_song.mute();
+				middle_song.mute();
+				lower_song.rewind();
+				upper_song.rewind();
+				middle_song.rewind();
+				upper_song.pause();
+				middle_song.pause();
+				lower_song.loop();
+				println("HITL");
+			}
+		}
 	}
 	// fade-out
 	else{
@@ -661,6 +721,12 @@ void controlEvent(ControlEvent theEvent){
 //begins the voting sequence, whether from idle or from start-up
 void begin_button(){
 	begin_button.hide();
+	vote_count = 0;
+	end_fade_done = false;
+	if(ended == true){
+		reset();
+		ended = false;
+	}
 	begin = true;
 }
 
@@ -901,10 +967,26 @@ void thank_you_msg(){
 	for (int i=0; i<6;i++){		voting_prompts[i].hide();}
 }
 
+void all_purpose_muter(){
+	upper_song.mute();
+	lower_song.mute();
+	middle_song.mute();
+}
+
+void all_purpose_unmuter(){
+	upper_song.unmute();
+	lower_song.unmute();
+	middle_song.unmute();
+}
 // draws the error message
 void error_message(){
-	if (error_timer < 300){
-		song.mute();
+	if (social_class == "Lower"){
+		error_timer_time = 50;
+	}else {
+		error_timer_time = 300;
+	}
+	if (error_timer < error_timer_time){
+		all_purpose_muter();
 		clear_screen();
 		imageMode(CENTER);
 		image(error_msg,width/2,height/2);
@@ -916,7 +998,7 @@ void error_message(){
 		voted_yes_error = false;
 		vote_count += 1;
 		error_timer = 0;
-		song.unmute();
+		all_purpose_unmuter();
 		for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
 		for (int i=0; i<2;i++){		voting_buttons[i].hide();}
 		for (int i=0; i<6;i++){		voting_prompts[i].hide();}
@@ -934,17 +1016,6 @@ void clear_screen(){
 			for (int i=0;i<2;i++){ 		voting_buttons[i].hide();}
 			for (int i=0;i<6;i++){ 		voting_prompts[i].hide();}
 										reset_button.hide();
-		}
-}
-
-//draw_screen() is not really used right now, but I have a feeling I might have to at some point? Maybe? I'll eliminate it later if it turns out I don't
-void draw_screen(){
-	background(255);
-		if(loaded==true){
-			for (int i=0;i<3;i++){ 		main_menu_buttons[i].show();}
-			for (int i=0;i<2;i++){ 		voting_buttons[i].hide();}
-			for (int i=0;i<3;i++){ 		voting_prompts[i].hide();}
-
 		}
 }
 
@@ -993,7 +1064,6 @@ void reset(){
 	if (idle == false){
 		begin_button.hide();
 	}
-	song.unmute();
 	println(message);
 }
 

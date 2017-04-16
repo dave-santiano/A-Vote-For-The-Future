@@ -4,23 +4,16 @@ import de.looksgood.ani.*;
 import ddf.minim.*;
 
 Minim minim;
-AudioPlayer middle_song, lower_song, upper_song;
+AudioPlayer middle_song, lower_song, upper_song, error_sound, reward_sound;
 AniSequence voting_sequence;
 // GUI variables
 ControlP5 cp5;
 PImage error_msg, thank_you_msg, vote_cursor, checkmark;
 PFont proggy;
 int page, idNumber, timer;
-int choice_width = 400;
-int choice_height = 100;
-int alphaValue = 255;
-int ticker_1_posx;
-int ticker_1_posy;
-int ticker_2_posx;
-int ticker_2_posy;
-int idle_timer = 0;
-int error_timer = 0;
-int error_timer_time;
+int choice_width = 400, choice_height = 100;
+int alphaValue = 255, ticker_1_posx, ticker_1_posy, ticker_2_posx, ticker_2_posy;
+int idle_timer = 0, error_timer = 0, error_timer_time;
 int intro_text_size = 50;
 float fade_speed = 2; //determines overall fade-in and fade-out speed
 float animation_x = 0, animation_y = 0;
@@ -28,7 +21,7 @@ float animation_x = 0, animation_y = 0;
 boolean loaded = false, name_displayed =false, name_done = false, race_sex_displayed = false, race_sex_done = false, district_birthday_displayed = false, district_birthday_done = false, please_vote_responsibly_displayed = false, please_vote_responsibly_done = false, intro_done = false, main_interface_start = false, welcome_text_displayed = false, welcome_text_done = false;
 //
 boolean voted_yes_thanks = false, voted_no_thanks = false, voted_yes_error = false, voted_no_error = false; //voted yes and voted no are for drawing the thank you message in the draw loop
-String ticker_message_part_1 = "District 6 residents are reporting increased incidents of theft in its Economic Recovery Zone, please be aware of your belongings. The new Recreational Zone of District 3 opens Donald Trump Stadium on top of the burnt remains of the Barack Obama Public Library. Riots from undesirable minority groups in District 4 destroy local playground. "; //message for the news ticker
+String ticker_message_part_1 = "District 6 residents are reporting increased incidents of robbery in its Economic Recovery Zone, please be aware of your belongings. The new Recreational Zone of District 3 opens Donald Trump Stadium on top of the burnt remains of the Barack Obama Public Library. Riots from minority groups in District 4 destroy local playground. "; //message for the news ticker
 String ticker_message_part_2 = "District 2's new 40 mile water front boasts ten new shopping malls and two pools that look like beaches. District 1's new Patriot Wall successfully containing riots from District 4. ";
 
 //determines which button has been picked
@@ -55,11 +48,12 @@ float sex_probability, race_probability, class_probability, district_probability
 boolean voting_sequence_stopped = false;
 boolean idle = true, begin = false, ended = false;
 boolean end_fade_done = false;
+
 void setup(){
 	//ticker position has to be set here since the width and height system
 	//variables don't get instantiated until processing calls the setup function.
-	// myPort = new Serial(this, "COM19", 9600);
-	fullScreen(1);
+	myPort = new Serial(this, "COM19", 9600);
+	fullScreen(2);
 	vote_cursor = loadImage("cursor.png"); // load custom cursor
 	cursor(vote_cursor,0,0); //(image, clickcoordinatex, clickcoordinatey)
 	voting_sequence = new AniSequence(this); //start a new animation sequence
@@ -70,9 +64,17 @@ void setup(){
 	checkmark = loadImage("checkmark.png");
 	cp5 = new ControlP5(this); //load the GUI library
 	minim = new Minim(this);
-	lower_song = minim.loadFile("anthem_lower_glitch.mp3");
-	middle_song = minim.loadFile("anthem_middle.mp3");
-	upper_song = minim.loadFile("anthem_upper.mp3");
+	lower_song = minim.loadFile("anthem_lower_glitch_lowervolume.mp3");
+	middle_song = minim.loadFile("anthem_middle_lowervolume.mp3");
+	upper_song = minim.loadFile("anthem_upper_lowervolume.mp3");
+	lower_song.setVolume(.5);
+	middle_song.setVolume(.5);
+	upper_song.setVolume(.5);
+	println(lower_song.getVolume());
+	println(middle_song.getVolume());
+	println(upper_song.getVolume());
+	reward_sound = minim.loadFile("reward_sound.wav");
+	error_sound = minim.loadFile("error_sound.wav");
 	 //load background music and loop a ton of times.
 	message = character_generator(); //message with character data for receipt printer
 	println(message);
@@ -90,10 +92,11 @@ void setup(){
 	ticker_1_posy= height-50;
 	ticker_2_posx= int(textWidth(ticker_message_part_1));
 	ticker_2_posy= height-50;
-	// myPort.write(message);
+	myPort.write(message);
 }
 
 void draw(){
+	println(vote_count);
 	// The beginning of the draw loop has the different introductory sentences, an if statement should cover whether they are drawn or not.
 	if (ended == true){ending_screen();}
 		else if(idle == true && ended == false){idled_screen();on_main_screen = false;}
@@ -116,6 +119,13 @@ void draw(){
 			fill(224,22,43);
 			text(name, width/2 + textWidth("Welcome to Patriotopia Voting Terminal #110817, ")/2,100);
 			if(on_main_screen==true){
+				if(social_class == "Lower"){
+					fill(255,0,0);
+					textSize(20);
+					textAlign(CENTER);
+					text("Low latency detected, connection may be slow or unreliable.",width/2,height/2-100);
+					text("This is common in District 4 or higher.",width/2,height/2-80);
+				}
 				textSize(40);
 				fill(0,40,104,175);
 				text("Today's voting topics are: ", width/2, 150);
@@ -124,10 +134,8 @@ void draw(){
 				fill(0,40,104,175);
 				text("Please vote.", width/2, 150);
 			}
-			if(social_class != "Lower"){
-				textSize(20);
-				text("Not " + name + "?" +" Click here:", 120,35);
-			}
+			textSize(20);
+			text("Not " + name + "?" +" Click here:", 120,35);
 			///////////////////////////////////////
 
 			/////////////////////////////////////// These lines are here for formatting purposes
@@ -190,7 +198,7 @@ void draw(){
 
 			if(voting_sequence.isEnded() == true && voting_sequence_stopped == false){
 				vote_count += 1;
-				if(vote_count == 6){ended = true;}
+				if(vote_count >= 6){ended = true;}
 				if(ended == false){
 					for (int i=0; i<6;i++){		main_menu_buttons[i].show();}
 					for (int i=0; i<2;i++){		voting_buttons[i].hide();}
@@ -202,21 +210,15 @@ void draw(){
 				voting_sequence_stopped = true;
 				on_main_screen = true;
 			}
-
 			if(social_class == "Lower"){
-				filter(INVERT);
-				frameRate(10);
-				fill(255,0,0);
-				textSize(200);
-				textAlign(CENTER);
-				text("MAINTENANCE NEEDED",width/2,height/2-100);
-				for (int i=0;i<6;i++){ voting_prompts[i].setColorValue(0xFFFFFFFF);}
-				reset_button.remove();
+				// filter(INVERT);
+				frameRate(15);
+				// for (int i=0;i<6;i++){ voting_prompts[i].setColorValue(0xFFFFFFFF);}
+				// reset_button.remove();
 			}else {
 				frameRate(60);
 			}
 	}
-
 }
 
 //This just calls all the character generation functions and gathers the
@@ -227,12 +229,11 @@ String character_generator(){
 	race_probability = random(0,1);
 	class_probability = random(0,1);
 	district_probability = random(0,.96);
-	idNumber = int(random(100000, 999999));
-	id = "ID#: " + idNumber;
+	// idNumber = int(random(100000, 999999));
+	// id = "ID#: " + idNumber;
 	sex = sex_determiner(sex_probability);
 	race = race_determiner(race_probability);
-	social_class = class_determiner(class_probability);
-	district = district_determiner(district_probability);
+	social_class = class_determiner(class_probability, district_probability);
 	if (sex == previous_sex){
 		if(sex == "Male"){
 			sex = "Female";
@@ -246,12 +247,24 @@ String character_generator(){
 	if (social_class == previous_social_class){
 		if(social_class == "Upper" || social_class =="Middle"){
 			social_class = "Lower";
+			if(district_probability < .30){
+				district = "District 4";
+			}
+			else if(district_probability >= .30 && district_probability < .50){
+				district = "District 5";
+			}
+			else{
+				district = "District 6";
+			}
 		}else{
+			if(district_probability < .20){
+				district = "District 1";
+			}
+			else{
+				district = "District 2";
+			}
 			social_class = "Upper";
 		}
-	}
-	if (district == previous_district){
-		district = district_determiner(district_probability);
 	}
 	previous_sex = sex;
 	previous_race = race;
@@ -259,7 +272,7 @@ String character_generator(){
 	previous_district = district;
 	name = name_determiner(sex);
 	birthday = birthday_generator();
-	message = "NAME: "+ name + "\n" + "BIRTHDAY: " + birthday + "\n" + "RACE: " + race + "\n" + "SEX: " + sex + "\n" + id + "\n" + "DISTRICT: " + district + "\n" + "CLASS: " + social_class + "\n" + "|";
+	message = "NAME: "+ name + "\n"  + "CLASS: " + social_class + "\n" + "DISTRICT: "  + district + "\n" + "RACE: " + race + "\n" + "SEX: " + sex + "\n" + "BIRTHDAY: " + birthday  +  "\n" + "If you are in trouble," + "\n" + "just remember who you are!" + "\n" + "|";
 	return message;
 }
 //idled screen also serves as the beginning screen as well
@@ -307,6 +320,7 @@ void ending_screen(){
 		text("I hope you enjoyed your brief glimpse into the city of Patriotopia.",width/2,height/2-50);
 		text("If you'd like to vote again under a different identity click here:",width/2,height/2);
 		text("The experience may be different this time.",width/2,height/2+300);
+		text("Wealth in Patriotopia makes things easy.", width/2,height/2+350);
 		fill(255,alphaValue);
 		rect(0,0,width,height);
 	}
@@ -481,39 +495,6 @@ void district_birthday_display(String district, String birthday){
 		text('\n' + "in the city of ",width/2 - textWidth("in the city of ")/2, height/2);
 		fill(0,40,104,alphaValue);
 		text('\n' + "Patriotopia.",width/2 + textWidth("Patriotopia.")/2,height/2);
-		if (loaded == true){
-			if (social_class == "Upper"){
-				middle_song.mute();
-				lower_song.mute();
-				middle_song.rewind();
-				lower_song.rewind();
-				upper_song.rewind();
-				lower_song.pause();
-				middle_song.pause();
-				upper_song.loop();
-				println("HITU");
-			}else if(social_class == "Middle"){
-				upper_song.mute();
-				lower_song.mute();
-				lower_song.rewind();
-				upper_song.rewind();
-				middle_song.rewind();
-				upper_song.pause();
-				lower_song.pause();
-				middle_song.loop();
-				println("HITM");
-			}else if(social_class == "Lower"){
-				upper_song.mute();
-				middle_song.mute();
-				lower_song.rewind();
-				upper_song.rewind();
-				middle_song.rewind();
-				upper_song.pause();
-				middle_song.pause();
-				lower_song.loop();
-				println("HITL");
-			}
-		}
 	}
 	// fade-out
 	else{
@@ -544,6 +525,39 @@ void district_birthday_display(String district, String birthday){
 			district_birthday_done = true;
 			clear_screen();
 		}
+		if (loaded == true){
+			if (social_class == "Upper"){
+				middle_song.mute();
+				lower_song.mute();
+				middle_song.rewind();
+				lower_song.rewind();
+				upper_song.rewind();
+				lower_song.pause();
+				middle_song.pause();
+				upper_song.unmute();
+				upper_song.loop();
+			}else if(social_class == "Middle"){
+				upper_song.mute();
+				lower_song.mute();
+				lower_song.rewind();
+				upper_song.rewind();
+				middle_song.rewind();
+				upper_song.pause();
+				lower_song.pause();
+				middle_song.unmute();
+				middle_song.loop();
+			}else if(social_class == "Lower"){
+				upper_song.mute();
+				middle_song.mute();
+				lower_song.rewind();
+				upper_song.rewind();
+				middle_song.rewind();
+				upper_song.pause();
+				middle_song.pause();
+				lower_song.unmute();
+				lower_song.loop();
+		}
+	}
 	}
 }
 //Vote responsibly or you don't matter
@@ -554,7 +568,7 @@ void please_vote_responsibly(){
 		textSize(intro_text_size);
 		fill(0,alphaValue);
 		textAlign(CENTER);
-		text("Please vote responsibly.", width/2,height/2);
+		text("Please vote as if you were your assigned citizen.", width/2,height/2);
 	}else{
 		please_vote_responsibly_displayed = true;
 		alphaValue -= fade_speed;
@@ -562,7 +576,7 @@ void please_vote_responsibly(){
 		textSize(intro_text_size);
 		fill(0,alphaValue);
 		textAlign(CENTER);
-		text("Please vote responsibly.", width/2,height/2);
+		text("Please vote as if you were your assigned citizen.", width/2,height/2);
 		if (alphaValue ==0){
 			please_vote_responsibly_done = true;
 			// myPort.write(message);
@@ -642,50 +656,50 @@ String name_determiner(String sex){
 	}
 }
 
-String class_determiner(float class_probability){
+String class_determiner(float class_probability, float district_probability){
+	println(district_probability);
 	if(class_probability<=.50)
 	{
+		if(district_probability < .10){
+			district = "District 2";
+		}
+		else if(district_probability >= .10 && district_probability < .50){
+			district = "District 3";
+		}
+		else if(district_probability >= .50 && district_probability < .80){
+			district = "District 4";
+		}
+		else{
+			district = "District 5";
+		}
 		String middle_class = "Middle";
 		return middle_class;
 	}
 	else if (class_probability > .5 && class_probability<=.79){
+		if(district_probability < .30){
+			district = "District 4";
+		}
+		else if(district_probability >= .30 && district_probability < .50){
+			district = "District 5";
+		}
+		else{
+			district = "District 6";
+		}
 		String lower_class = "Lower";
 		return lower_class;
 	}
+
 	else if(class_probability > .79 && class_probability <= 1.0){
+		if(district_probability < .20){
+			district = "District 1";
+		}
+		else{
+			district = "District 2";
+		}
 		String upper_class = "Upper";
 		return upper_class;
 	}
 	else{
-		return "";
-	}
-}
-
-String district_determiner(float district_probability){
-	if (district_probability < .16){
-		String dist1 = "District 1";
-		return dist1;
-	}
-	else if(district_probability >= .16 && district_probability < .32){
-		String dist2 = "District 2";
-		return dist2;
-	}
-	else if(district_probability >= .32 && district_probability < .48){
-		String dist3 = "District 3";
-		return dist3;
-	}
-	else if(district_probability >= .48 && district_probability < .64){
-		String dist4 = "District 4";
-		return dist4;
-	}
-	else if(district_probability >= .64 && district_probability < .80){
-		String dist5 = "District 5";
-		return dist5;
-	}
-	else if(district_probability >= .80 && district_probability < .96){
-		String dist6 = "District 6";
-		return dist6;
-	}else{
 		return "";
 	}
 }
@@ -781,56 +795,56 @@ void voting_interface(){
 	.updateSize();
 
 	voting_prompts[0] = cp5.addTextarea("voting_prompt1")
-	.setText("The recent ban on immigration into the city has been proven effective. The Department of City Safety and Security advises to continue the ban. Please vote.")
+	.setText("The recent ban on immigration into District 4 has been partially effective in containing riots in District 4. District 4 riots are damaging shared infrastructure with District 3. Increased customs officers and border protection will be added to tax rates of District 6. The Department of City Safety and Security advises to continue the ban. Continue the ban?")
 	.setPosition(width/2-480, 300)
-	.setSize(960,200)
+	.setSize(960, 300)
 	.setColorValue(0x00000000)
-	.setFont(createFont("ProggySquareTT", 40))
+	.setFont(createFont("ProggySquareTT", 35))
 	.hideScrollbar()
 	.hide();
 
 	voting_prompts[1] = cp5.addTextarea("voting_prompt2")
-	.setText("Recent studies by government economists say that a new commercial zone in District 4 would lead to increased economic growth.\nPlease vote.")
+	.setText("Recent studies by the Patriotopia City Institute of Economics say that a new commercial zone in District 2 would lead to increased economic growth to District 2 and the surrounding District 3 and District 1. Profits from District 3's new Donald Trump stadium and new taxes on District 4 will help leverage building costs. Build the new commercial zone?")
 	.setPosition(width/2-480, 300)
-	.setSize(960,200)
+	.setSize(960, 300)
 	.setColorValue(0x00000000)
-	.setFont(createFont("ProggySquareTT", 40))
+	.setFont(createFont("ProggySquareTT", 35))
 	.hideScrollbar()
 	.hide();
 
 	voting_prompts[2] = cp5.addTextarea("voting_prompt3")
-	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have ever had the opportunity to live in?")
+	.setText("President Victor has initiated a new referendum to outlaw any current race-related national holidays or celebrations for the purposes of 'base-line equality'. Ban race-related national holidays?")
 	.setPosition(width/2-480, 300)
-	.setSize(960,200)
+	.setSize(960, 300)
 	.setColorValue(0x00000000)
-	.setFont(createFont("ProggySquareTT", 40))
+	.setFont(createFont("ProggySquareTT", 35))
 	.hideScrollbar()
 	.hide();
 
 	voting_prompts[3] = cp5.addTextarea("voting_prompt4")
-	.setText("Isn't Patriotopia the best, liberty-filled, democratic city you have ever had the opportunity to live in?")
+	.setText("President Victor is running for his third four-year term as reigning Executive of Patriotopia. Notable accomplishments include huge economic growth and lower taxes for District 1, District 2, and District 3. The Reagan Institute of Economic Research says this may lead to new jobs and infrastructure for District 5 and District 6. Instate President Victor for a third term?")
 	.setPosition(width/2-480, 300)
-	.setSize(960,200)
+	.setSize(960, 300)
 	.setColorValue(0x00000000)
-	.setFont(createFont("ProggySquareTT", 40))
+	.setFont(createFont("ProggySquareTT", 35))
 	.hideScrollbar()
 	.hide();
 
 	voting_prompts[4] = cp5.addTextarea("voting_prompt5")
-	.setText("ELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTIONELECTION")
+	.setText("The recent charter schools built in District 1 and District 2 have shown to be effective and cheap, with tuition averaging at $10,000 a year. Government Educators propose an expedited transition into introducing and building these same schools in District 3, District 4, and District 5, and (tentative) District 6. Build the new charter schools?")
 	.setPosition(width/2-480, 300)
-	.setSize(960,200)
+	.setSize(960, 300)
 	.setColorValue(0x00000000)
-	.setFont(createFont("ProggySquareTT", 40))
+	.setFont(createFont("ProggySquareTT", 35))
 	.hideScrollbar()
 	.hide();
 
 	voting_prompts[5] = cp5.addTextarea("voting_prompt6")
-	.setText("ABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTIONABORTION")
+	.setText("The Christian-Conservatives for President Victor have successfully protested and petitioned for an abortion illegalization referendum. Illegalize abortion?")
 	.setPosition(width/2-480, 300)
-	.setSize(960,200)
+	.setSize(960, 300)
 	.setColorValue(0x00000000)
-	.setFont(createFont("ProggySquareTT", 40))
+	.setFont(createFont("ProggySquareTT", 35))
 	.hideScrollbar()
 	.hide();
 
@@ -902,6 +916,7 @@ void choice6(){
 //In doing this I can determine whether your demographic throws an error by if-else statements
 void voting_button_yes(){
 	if(loaded==true){
+		// choice_#_picked draws the checkmarks
 		if (clicked_button == "choice1"){
 			choice_1_picked = true;
 		}
@@ -920,8 +935,11 @@ void voting_button_yes(){
 		if (clicked_button == "choice6"){
 			choice_6_picked = true;
 		}
+
 		voting_sequence_stopped = false;
 		thank_you_msg();
+		reward_sound.play();
+		reward_sound.rewind();
 		voting_sequence.start();
 		voted_yes_thanks = true;
 	}
@@ -947,11 +965,31 @@ void voting_button_no(){
 		if (clicked_button == "choice6"){
 			choice_6_picked = true;
 		}
-		if(clicked_button=="choice3"){
+
+		if(clicked_button == "choice3" && social_class == "Lower" &&  race == "Black" || race == "Asian" || race == "American Indian or Alaska Native"){
 			voted_no_error = true;
-		}else{
+		}
+		else if(clicked_button == "choice2" && social_class == "Lower"){
+			voted_no_error = true;
+		}
+		else if(clicked_button == "choice1" && social_class == "Lower"){
+			voted_no_error = true;
+		}
+		else if(clicked_button == "choice4" && social_class == "Lower" && district == "District 6"){
+			voted_no_error = true;
+		}
+		else if(clicked_button == "choice5" && (social_class == "Lower" && district == "District 4" || district == "District 5" || district == "District 6") || (social_class == "Middle" && district == "District 6")){
+			voted_no_error = true;
+		}
+		else if(clicked_button == "choice6" && sex == "Female" && social_class == "Lower"){
+			voted_no_error = true;
+		}
+
+		else{
 			voting_sequence_stopped = false;
 			thank_you_msg();
+			reward_sound.play();
+			reward_sound.rewind();
 			voting_sequence.start();
 			voted_no_thanks = true;
 		}
@@ -986,6 +1024,7 @@ void error_message(){
 		error_timer_time = 300;
 	}
 	if (error_timer < error_timer_time){
+		error_sound.play();
 		all_purpose_muter();
 		clear_screen();
 		imageMode(CENTER);
@@ -994,6 +1033,7 @@ void error_message(){
 		for (int i=0; i<6;i++){		voting_prompts[i].hide();}
 		error_timer += 1;
 	}else{
+		error_sound.rewind();
 		voted_no_error = false;
 		voted_yes_error = false;
 		vote_count += 1;
@@ -1026,6 +1066,7 @@ void check_if_idle(){
 		if(idle_timer == 3600){
 			begin_button.show();
 			alphaValue = 255;
+			vote_count = 0;
 			idle = true;
 		}
 	}else{
@@ -1035,6 +1076,8 @@ void check_if_idle(){
 
 //resets everything, sets everything back to false
 void reset(){
+	all_purpose_muter();
+	frameRate(60);
 	background(255);
 	for (int i=0;i<6;i++){main_menu_buttons[i].unlock();}
 	message = character_generator();
@@ -1064,7 +1107,7 @@ void reset(){
 	if (idle == false){
 		begin_button.hide();
 	}
-	println(message);
+	myPort.write(message);
 }
 
 //instantiate the animation sequences that the thank you messages use

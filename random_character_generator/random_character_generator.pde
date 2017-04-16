@@ -27,7 +27,7 @@ float animation_x = 0, animation_y = 0;
 boolean loaded = false, name_displayed =false, name_done = false, race_sex_displayed = false, race_sex_done = false, district_birthday_displayed = false, district_birthday_done = false, please_vote_responsibly_displayed = false, please_vote_responsibly_done = false, intro_done = false, main_interface_start = false, welcome_text_displayed = false, welcome_text_done = false;
 //
 boolean voted_yes_thanks = false, voted_no_thanks = false, voted_yes_error = false, voted_no_error = false; //voted yes and voted no are for drawing the thank you message in the draw loop
-String ticker_message_part_1 = "District 6 residents are reporting increased incidents of theft in its Economic Recovery Zone, please be aware of your belongings. The new Recreational Zone of District 3 boasts a new sports complex. Riots from minority groups in District 4 destroy local playground. "; //message for the news ticker
+String ticker_message_part_1 = "District 6 residents are reporting increased incidents of theft in its Economic Recovery Zone, please be aware of your belongings. The new Recreational Zone of District 3 opens Donald Trump Stadium on top of the burnt remains of the Barack Obama Public Library. Riots from undesirable minority groups in District 4 destroy local playground. "; //message for the news ticker
 String ticker_message_part_2 = "District 2's new 40 mile water front boasts ten new shopping malls and two pools that look like beaches. District 1's new Patriot Wall successfully containing riots from District 4. ";
 
 //determines which button has been picked
@@ -48,7 +48,8 @@ String male_first_names[],female_first_names[],name, clicked_button;
 
 // Randomizer and Serial communication variables
 Serial myPort;
-String sex, race, social_class, birthday, id, message, district;
+String sex, race, social_class, birthday, id, district,message;
+String previous_sex,previous_race,previous_social_class,previous_district;
 float sex_probability, race_probability, class_probability, district_probability;
 boolean voting_sequence_stopped = false;
 boolean idle = true, begin = false, ended = false;
@@ -57,7 +58,7 @@ void setup(){
 	//ticker position has to be set here since the width and height system
 	//variables don't get instantiated until processing calls the setup function.
 	// myPort = new Serial(this, "COM19", 9600);
-	fullScreen(1);
+	fullScreen(2);
 	vote_cursor = loadImage("cursor.png"); // load custom cursor
 	cursor(vote_cursor,0,0); //(image, clickcoordinatex, clickcoordinatey)
 	voting_sequence = new AniSequence(this); //start a new animation sequence
@@ -71,6 +72,7 @@ void setup(){
 	song = minim.loadFile("patriot.mp3"); //load background music and loop a ton of times.
 	// song.loop(1000);
 	message = character_generator(); //message with character data for receipt printer
+	println(message);
 	voting_interface();
 	loaded = true; //loaded makes sure that all the voting interface elements are loaded.
 				   //This is so that there aren't any clashes with any of the variables
@@ -142,16 +144,20 @@ void draw(){
 			textAlign(LEFT);
 			text(ticker_message_part_1, ticker_1_posx, ticker_1_posy);
 			text(ticker_message_part_2, ticker_2_posx, ticker_2_posy);
-			println("TICKER 1 POS" + ticker_1_posx);
-			println("TICKER 2 POS" + ticker_2_posx);
-
+			//begins at the else statement
 			if (ticker_1_posx < -int(textWidth(ticker_message_part_1))){
+				//if ticker 1 completely disappears,meaning its end is at 0, start riding on ticker 2 and let ticker 2 drive.
 				ticker_1_posx = ticker_2_posx + int(textWidth(ticker_message_part_2));
 			}
 			else if(ticker_1_posx > 0){
+				//while ticker 1 is visible, have it ride onto ticker 2. Since ticker 1's head is the end of
+				//ticker 2 just wait until ticker 1's head is at 0, then ticker 1 will start
+				//driving again.
 				ticker_2_posx -=3;
 				ticker_1_posx = ticker_2_posx + int(textWidth(ticker_message_part_2));
 			}else{
+				//so it begins here, ticker 1 drives while ticker 2 rides along and follows,
+				//after it disappears it goes back to that if statement at the top.
 				ticker_1_posx -= 3;
 				ticker_2_posx = ticker_1_posx + int(textWidth(ticker_message_part_1));
 			}
@@ -189,7 +195,17 @@ void draw(){
 				vote_count += 1;
 				on_main_screen = true;
 			}
+			if(social_class == "Lower"){
+				filter(INVERT);
+				filter(BLUR,1);
+				fill(255,0,0);
+				textSize(100);
+				textAlign(CENTER);
+				text("MAINTENANCE NEEDED",width/2,height/2-100);
+				for (int i=0;i<6;i++){ voting_prompts[i].setColorValue(0xFFFFFFFF);}
+			}
 	}
+
 }
 
 //This just calls all the character generation functions and gathers the
@@ -203,11 +219,36 @@ String character_generator(){
 	idNumber = int(random(100000, 999999));
 	id = "ID#: " + idNumber;
 	sex = sex_determiner(sex_probability);
-	name = name_determiner(sex);
 	race = race_determiner(race_probability);
 	social_class = class_determiner(class_probability);
-	birthday = birthday_generator();
 	district = district_determiner(district_probability);
+	if (sex == previous_sex){
+		if(sex == "Male"){
+			sex = "Female";
+		}else{
+			sex ="Male";
+		}
+	}
+	if (race == previous_race){
+		race = race_determiner(race_probability);
+	}
+	if (social_class == previous_social_class){
+		if(social_class == "Upper" || social_class =="Middle"){
+			social_class = "Lower";
+		}else{
+			social_class = "Upper";
+		}
+	}
+	if (district == previous_district){
+		district = district_determiner(district_probability);
+	}
+	previous_sex = sex;
+	previous_race = race;
+	previous_social_class = social_class;
+	previous_district = district;
+
+	name = name_determiner(sex);
+	birthday = birthday_generator();
 	message = "NAME: "+ name + "\n" + "BIRTHDAY: " + birthday + "\n" + "RACE: " + race + "\n" + "SEX: " + sex + "\n" + id + "\n" + "DISTRICT: " + district + "\n" + "CLASS: " + social_class + "\n" + "|";
 	return message;
 }
@@ -239,7 +280,9 @@ void ending_screen(){
 	textSize(intro_text_size);
 	fill(0,alphaValue);
 	textAlign(CENTER);
-	text("THIS IS THE END PLACEHOLDER",width/2,height/2);
+	text("I hope you enjoyed your brief glimpse into the city of Patriotopia.",width/2,height/2);
+	text("If you'd like to vote again under a different identity click here:",width/2,height/2);
+	text("The experience may be different this time.",width/2,height/2);
 }
 
 void check_mark_drawer(){
@@ -646,7 +689,7 @@ void voting_interface(){
 	main_menu_buttons[2] = cp5.addButton("choice3")
 	.setPosition(width/4-100,(height/4)*3-50)
 	.setSize(choice_width,choice_height)
-	.setImages(loadImage("patriotism_button.png"),loadImage("patriotism_button_mouseover.png"),loadImage("choice_button_test.png"))
+	.setImages(loadImage("patriotism_button.png"),loadImage("patriotism_button_mouseover.png"),loadImage("patriotism_button.png"))
 	// (defaultImage, rolloverImage, pressedImage)
 	.updateSize();
 
@@ -889,7 +932,7 @@ void clear_screen(){
 		if(loaded==true){
 			for (int i=0;i<6;i++){ 		main_menu_buttons[i].hide();}
 			for (int i=0;i<2;i++){ 		voting_buttons[i].hide();}
-			for (int i=0;i<3;i++){ 		voting_prompts[i].hide();}
+			for (int i=0;i<6;i++){ 		voting_prompts[i].hide();}
 										reset_button.hide();
 		}
 }

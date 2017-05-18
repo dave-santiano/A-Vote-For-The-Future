@@ -20,11 +20,12 @@ float animation_x = 0, animation_y = 0;
 //these booleans display whether the different elements of the introduction are done or not.
 boolean loaded = false, name_displayed =false, name_done = false, race_sex_displayed = false, race_sex_done = false, district_birthday_displayed = false, district_birthday_done = false, please_vote_responsibly_displayed = false, please_vote_responsibly_done = false, intro_done = false, main_interface_start = false, welcome_text_displayed = false, welcome_text_done = false;
 //
+
 boolean voted_yes_thanks = false, voted_no_thanks = false, voted_yes_error = false, voted_no_error = false; //voted yes and voted no are for drawing the thank you message in the draw loop
 String ticker_message_part_1 = "District 6 residents are reporting increased incidents of robbery in its Economic Recovery Zone, please be aware of your belongings. The new Recreational Zone of District 3 opens Donald Trump Stadium on top of the burnt remains of the Barack Obama Public Library. Riots from minority groups in District 4 destroy local playground. "; //message for the news ticker
 String ticker_message_part_2 = "District 2's new 40 mile water front boasts ten new shopping malls and two pools that look like beaches. District 1's new Patriot Wall successfully containing riots from District 4. ";
 
-//determines which button has been picked
+//determines which button has been picked, this is for the checkmarks
 boolean choice_1_picked = false, choice_2_picked = false, choice_3_picked = false, choice_4_picked = false, choice_5_picked = false, choice_6_picked = false;
 
 boolean on_main_screen = false;//checks to see if on the main screen of the voting terminal, this is used to mainly render out the checkmarks, but it can be used to render out any elements that you just want on the main screen.
@@ -53,7 +54,7 @@ void setup(){
 	//ticker position has to be set here since the width and height system
 	//variables don't get instantiated until processing calls the setup function.
 	myPort = new Serial(this, "COM19", 9600);
-	fullScreen(2);
+	fullScreen(1);
 	vote_cursor = loadImage("cursor.png"); // load custom cursor
 	cursor(vote_cursor,0,0); //(image, clickcoordinatex, clickcoordinatey)
 	voting_sequence = new AniSequence(this); //start a new animation sequence
@@ -67,12 +68,6 @@ void setup(){
 	lower_song = minim.loadFile("anthem_lower_glitch_lowervolume.mp3");
 	middle_song = minim.loadFile("anthem_middle_lowervolume.mp3");
 	upper_song = minim.loadFile("anthem_upper_lowervolume.mp3");
-	lower_song.setVolume(.5);
-	middle_song.setVolume(.5);
-	upper_song.setVolume(.5);
-	println(lower_song.getVolume());
-	println(middle_song.getVolume());
-	println(upper_song.getVolume());
 	reward_sound = minim.loadFile("reward_sound.wav");
 	error_sound = minim.loadFile("error_sound.wav");
 	 //load background music and loop a ton of times.
@@ -96,7 +91,6 @@ void setup(){
 }
 
 void draw(){
-	println(vote_count);
 	// The beginning of the draw loop has the different introductory sentences, an if statement should cover whether they are drawn or not.
 	if (ended == true){ending_screen();}
 		else if(idle == true && ended == false){idled_screen();on_main_screen = false;}
@@ -106,6 +100,7 @@ void draw(){
 		else if(district_birthday_done == false){district_birthday_display(district, birthday);}
 		else if(please_vote_responsibly_done == false){please_vote_responsibly();}
 		else if(intro_done == true){voting_interface();begin_button.hide();main_interface_start = true;	on_main_screen = true;begin =false;}
+
 	//introduction display end\\
 	if (main_interface_start == true){
 			check_if_idle();
@@ -634,7 +629,6 @@ String sex_determiner(float sex_probability){
 	else
 	{
 		String female = "Female";
-
 		return female;
 	}
 }
@@ -675,7 +669,7 @@ String class_determiner(float class_probability, float district_probability){
 		String middle_class = "Middle";
 		return middle_class;
 	}
-	else if (class_probability > .5 && class_probability<=.79){
+	else if (class_probability > .50 && class_probability<=.79){
 		if(district_probability < .30){
 			district = "District 4";
 		}
@@ -795,7 +789,7 @@ void voting_interface(){
 	.updateSize();
 
 	voting_prompts[0] = cp5.addTextarea("voting_prompt1")
-	.setText("The recent ban on immigration into District 4 has been partially effective in containing riots in District 4. District 4 riots are damaging shared infrastructure with District 3. Increased customs officers and border protection will be added to tax rates of District 6. The Department of City Safety and Security advises to continue the ban. Continue the ban?")
+	.setText("The recent ban on immigration into District 4 has been partially effective in containing riots in District 4. District 4 riots are damaging shared infrastructure with District 3. Increased customs officers and border protection will be added to tax rates of District 6. The Department of City Safety and Security advises to continue the ban. Continue the immigration ban?")
 	.setPosition(width/2-480, 300)
 	.setSize(960, 300)
 	.setColorValue(0x00000000)
@@ -840,7 +834,7 @@ void voting_interface(){
 	.hide();
 
 	voting_prompts[5] = cp5.addTextarea("voting_prompt6")
-	.setText("The Christian-Conservatives for President Victor have successfully protested and petitioned for an abortion illegalization referendum. Illegalize abortion?")
+	.setText("The Christian-Conservatives for President Victor have successfully protested and petitioned for a referendum to illegalize abortion. Illegalize abortion?")
 	.setPosition(width/2-480, 300)
 	.setSize(960, 300)
 	.setColorValue(0x00000000)
@@ -850,14 +844,14 @@ void voting_interface(){
 
 	voting_buttons[0] = cp5.addButton("voting_button_yes")
 	.setPosition(width/2 -480, 600)
-	.setImages(loadImage("yes_button.png"),loadImage("yes_button.png"),loadImage("yes_button.png"))
+	.setImages(loadImage("yes_button.png"),loadImage("yes_button_mouseover.png"),loadImage("yes_button.png"))
 	.setSize(250,175)
 	.setCaptionLabel("YES")
 	.hide();
 
 	voting_buttons[1] = cp5.addButton("voting_button_no")
 	.setPosition(width/2 + 230, 600)
-	.setImages(loadImage("no_button.png"),loadImage("no_button.png"),loadImage("no_button.png"))
+	.setImages(loadImage("no_button.png"),loadImage("no_button_mouseover.png"),loadImage("no_button.png"))
 	.setSize(250,175)
 	.setCaptionLabel("NO")
 	.hide();
@@ -935,7 +929,6 @@ void voting_button_yes(){
 		if (clicked_button == "choice6"){
 			choice_6_picked = true;
 		}
-
 		voting_sequence_stopped = false;
 		thank_you_msg();
 		reward_sound.play();
@@ -1107,7 +1100,7 @@ void reset(){
 	if (idle == false){
 		begin_button.hide();
 	}
-	myPort.write(message);
+	// myPort.write(message);
 }
 
 //instantiate the animation sequences that the thank you messages use

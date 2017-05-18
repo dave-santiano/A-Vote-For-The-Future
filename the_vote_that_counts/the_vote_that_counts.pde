@@ -9,7 +9,14 @@ AudioPlayer middle_song, lower_song, upper_song, error_sound, reward_sound;
 AniSequence voting_sequence;
 ControlP5 cp5;
 PFont proggy;
-PImage error_msg, thank_you_msg, vote_cursor, checkmark, place_holder_ID;
+PImage error_msg, thank_you_msg, vote_cursor, checkmark, place_holder_ID, asian_male_face;
+
+String[] male_face_names = {"asian_male_face.jpg", "black_male_face.jpg", "hispanic_male_face.jpg", "white_male_face.jpg"};
+String[] female_face_names = {"asian_female_face.jpg", "black_female_face.jpg", "hispanic_female_face.jpg", "white_female_face.jpg"};
+PImage[] male_faces = new PImage[male_face_names.length];
+PImage[] female_faces = new PImage[female_face_names.length];
+
+
 
 // Fading and animation variables
 int alphaValue = 255;
@@ -55,19 +62,23 @@ boolean lower_character_intro = false;
 boolean characters_generated = false;
 boolean upper_middle_character_generated = false;
 boolean lower_character_generated = false;
-
+boolean lower_class_sequence = false;
+int male_face_picker = int(random(0,male_faces.length));
+int female_face_picker = int(random(0,female_faces.length));
 
 void setup(){
 	fullScreen();
 	vote_cursor = loadImage("cursor.png");
 	cursor(vote_cursor,0,0);
 	voting_sequence = new AniSequence(this);
+	face_image_instantiator();
 	proggy = createFont("ProggySquareTT", 32);
 	textFont(proggy);
 	error_msg = loadImage("error_msg.png");
 	thank_you_msg = loadImage("thank_you_msg.png");
 	checkmark = loadImage("checkmark.png");
 	place_holder_ID = loadImage("placeholder_test.png");
+	asian_male_face = loadImage("asian_male_face.jpg");
 	cp5  = new ControlP5(this);
 	minim = new Minim(this);
 	reward_sound = minim.loadFile("reward_sound.wav");
@@ -80,23 +91,34 @@ void setup(){
 	ticker_1_posx = 0;
 	ticker_2_posx = int(textWidth(ticker_message_part_1));
 	ticker_posy = height-50;
-
 }
 
 void draw(){
-	println(voting_sequence_playing);
+	//What to do when thank you animation and sequences are over???
+	if(voting_sequence.isEnded()==true){
+		for(int i=0; i < voting_buttons.length; i++){voting_buttons[i].show();}
+		voted_yes_thanks = false; //set these two to false to stop rendering the messages
+		voted_no_thanks = false;
+		voting_sequence_playing = false;
+	}
 	background(255);
+	//upper class exeperience
 	if(upper_middle_character_generated == false){
 		upper_middle_class_character_generator();
 		id = id_number_generator();
 		upper_middle_character_generated = true;
 	}
-
 	if(upper_middle_character_intro == true){
 		imageMode(CENTER);
 		image(place_holder_ID, width/2,height/2 - 100);
-		fill(125);
-		rect(400,250,325,400);
+		// fill(125);
+		imageMode(CORNER);
+		if(sex ==  "Male"){
+			image(male_faces[male_face_picker], 420,230);
+		}else{
+			image(female_faces[female_face_picker], 420,230);
+		}
+		// rect(400,250,325,400);
 		fill(0);
 		textSize(70);
 		textAlign(CENTER);
@@ -107,37 +129,35 @@ void draw(){
 		textAlign(LEFT);
 		text("Name: " + name, width/2-200,300);
 		text("Place of Residence: " + district, width/2-200,350);
+		text("Class: " + social_class, width/2-200,400);
 		text("Sex: " + sex, width/2-200,575);
 		text("DOB: " + birthday, width/2-200,625);
+
 	}if (upper_middle_class_sequence == true){
 		upper_middle_character_intro = false;
 		for(int i=0; i < voting_buttons.length; i++){voting_buttons[i].show();}
-
-		if(upper_middle_counter == 0){
-			upper_voting_prompts[upper_middle_counter].show();
-		}else{
-			upper_voting_prompts[upper_middle_counter-1].hide();
-			upper_voting_prompts[upper_middle_counter].show();
-		}
-
-		if(voting_sequence.isEnded()==true){
-			for(int i=0; i < voting_buttons.length; i++){voting_buttons[i].show();}
-			voted_yes_thanks = false; //set these two to false to stop rendering the messages
-			voted_no_thanks = false;
-			voting_sequence_playing = false;
-		}
-		if(voting_sequence_playing == false && upper_middle_counter == 5){
+		if(upper_middle_counter <= 5){
+			if(upper_middle_counter == 0){
+				upper_voting_prompts[upper_middle_counter].show();
+			}else{
+				upper_voting_prompts[upper_middle_counter-1].hide();
+				upper_voting_prompts[upper_middle_counter].show();
+			}
+		}else if(voting_sequence_playing == false && upper_middle_counter > 5){
 			upper_middle_class_sequence = false;
 			lower_character_intro = true;
+			begin_button.show();
 		}
 	}
 
+	//lower class experience
 	if (lower_character_intro == true){
 		if(lower_character_generated == false){
 			lower_class_character_generator();
 			id = id_number_generator();
 			lower_character_generated = true;
 		}
+		for(int i=0; i < voting_buttons.length; i++){voting_buttons[i].hide();}
 		imageMode(CENTER);
 		image(place_holder_ID, width/2,height/2 - 100);
 		fill(125);
@@ -154,9 +174,24 @@ void draw(){
 		text("Place of Residence: " + district, width/2-200,350);
 		text("Sex: " + sex, width/2-200,575);
 		text("DOB: " + birthday, width/2-200,625);
+	}if(lower_class_sequence == true){
+		lower_character_intro = false;
+		for(int i=0; i < voting_buttons.length; i++){voting_buttons[i].show();}
+		if(lower_counter <= 5){
+			if(lower_counter == 0){
+				lower_voting_prompts[lower_counter].show();
+			}else{
+				lower_voting_prompts[lower_counter-1].hide();
+				lower_voting_prompts[lower_counter].show();
+			}
+		}else if(voting_sequence_playing == false && lower_counter > 5){
+			lower_class_sequence = false;
+		}
 	}
 
 
+
+	//covers the animations
 	if (voted_yes_thanks == true){
 		thank_you_msg();
 	}
@@ -453,6 +488,9 @@ void voting_button_yes(){
 		if(upper_middle_class_sequence == true){
 			upper_middle_counter+=1;
 		}
+		if(lower_class_sequence == true){
+			lower_counter += 1;
+		}
 	}
 }
 
@@ -467,7 +505,9 @@ void voting_button_no(){
 		if(upper_middle_class_sequence == true){
 			upper_middle_counter+=1;
 		}
-
+		if(lower_class_sequence == true){
+			lower_counter += 1;
+		}
 	}
 }
 
@@ -526,7 +566,11 @@ void check_if_idle(){
 }
 
 void begin_button(){
-	upper_middle_class_sequence = true;
+	if(lower_character_intro == false){
+		upper_middle_class_sequence = true;
+	}else{
+		lower_class_sequence = true;
+	}
 	begin_button.hide();
 }
 void reset(){
@@ -576,4 +620,15 @@ void clear_screen(){
 			for (int i=0;i<6;i++){ 		lower_voting_prompts[i].hide();}
 										reset_button.hide();
 		}
+}
+
+void face_image_instantiator(){
+	for (int i = 0; i<male_face_names.length; i++){
+		String male_face_name = male_face_names[i];
+		male_faces[i] = loadImage(male_face_name);
+	}
+	for (int i = 0; i<female_face_names.length; i++){
+		String female_face_name = female_face_names[i];
+		female_faces[i] = loadImage(female_face_name);
+	}
 }
